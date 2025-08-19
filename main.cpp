@@ -11,8 +11,8 @@ int main()
 
     //db.createTable("users", { {"name", "string"}, {"age", "int"} });
     db.use_table("users");
-    db.table->read_scheme();
-    db.table->show_scheme();
+    //db.table->read_scheme();
+   // db.table->show_scheme();
 
     //std::vector<std::string> row1 = {"Alice", "30"};
     //db.table->insert(row1);
@@ -20,11 +20,11 @@ int main()
     //std::vector<std::string> row2 = {"Bob", "25"};
     //db.table->insert(row2);
 
-    db.table->read(); // ЧТОБЫ ПРОСТО ГЛЯНУТЬ, ЧТО В ФАЙЛК
+    //db.table->read(); // ЧТОБЫ ПРОСТО ГЛЯНУТЬ, ЧТО В ФАЙЛК
 
    // std::vector<std::string> row3 = {"Insomnia", "20"};
    // db.table->insert(row3);
-
+    db.table->delete_row(3);
     db.table->show_table_data();
 
     } catch (const std::exception& e) {

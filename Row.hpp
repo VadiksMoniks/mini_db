@@ -12,7 +12,7 @@ class Row//это класс отдельной строки записи, он 
 {
     private:
         std::vector<std::unique_ptr<ValueBase>> row_data;
-        bool deleted = false;
+        bool is_deleted = false;
 
     public:
     
@@ -29,7 +29,7 @@ class Row//это класс отдельной строки записи, он 
         ~Row() = default;
         
        void add_to_row(const std::string& data_type, const std::string& value) {
-            std::cout << "Adding value: '" << value << "' with type: '" << data_type << "'\n";
+          //  std::cout << "Adding value: '" << value << "' with type: '" << data_type << "'\n";
 
             if (data_type == "int")
                 row_data.push_back(std::make_unique<Value<int>>(std::stoi(value)));
@@ -43,17 +43,21 @@ class Row//это класс отдельной строки записи, он 
             }
         }
 
-        int getRowSize() const
+        inline int getRowSize() const
         {
             return static_cast<int>(row_data.size());
         }
 
-        const std::vector<std::unique_ptr<ValueBase>>& getRowData() const {
+        inline const std::vector<std::unique_ptr<ValueBase>>& getRowData() const {
             return row_data;
         }
 
-        bool isDeleted(){
-            return deleted;
+        inline bool isDeleted() const{
+            return is_deleted;
+        }
+
+        inline void setAsDeleted(){
+            this->is_deleted = true;
         }
 };
 #endif

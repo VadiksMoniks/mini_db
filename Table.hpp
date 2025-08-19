@@ -6,17 +6,23 @@
 #include <fstream>
 #include <vector>
 #include "Row.hpp"
-
+/**
+ * update
+ * delete DONE
+ * search by different params
+ * more datatypes
+ */
 class Table{//при создании объекта сразу использовать вектор а при удалении записывать все в файл
 
     private:
         std::vector<Row> table_data;
+        std::vector<std::pair<std::string, std::string>> scheme;
         bool is_edited = false;
 
     public:
         std::string db_name;
         std::string table_name;
-        std::vector<std::pair<std::string, std::string>> scheme;
+
     public:
         Table(std::string db_name, std::string table_name);
         ~Table();
@@ -25,7 +31,7 @@ class Table{//при создании объекта сразу использо
         void insert(const std::vector<std::string>& row);
         void insert_into_file();
         void update();
-        void delete_row();
+        void delete_row(const int& index);
         void delete_all();
         void read();
         void read_scheme();
@@ -33,15 +39,15 @@ class Table{//при создании объекта сразу использо
         void show_scheme();
 };
 
-Table::Table(std::string db_name, std::string table_name)
+Table::Table(std::string db_name, std::string table_name) : db_name(db_name), table_name(table_name)
 {
-    this->db_name = db_name;
-    this->table_name = table_name;
+    this->read_scheme();
+    this->read();
 }
 
 Table::~Table()
 {
-    std::cout << "Table destructor called\n";
+   // std::cout << "Table destructor called\n";
     this->insert_into_file();
     table_data.clear();
 }
@@ -77,13 +83,13 @@ void Table::defineScheme(std::vector<std::pair<std::string, std::string>> column
 void Table::insert(const std::vector<std::string>& row)
 {
     if (row.size() + 1 != scheme.size())
-        throw std::runtime_error("Row size does not match scheme size");
+        throw std::runtime_error("Too few arguments passed!");//("Row size does not match scheme size");
 
     Row new_row;
 
     const Row& last_row = table_data.back();
-    const auto& row_data = last_row.getRowData();
-    const std::string& last_id = row_data[0]->toString();
+    const std::vector<std::unique_ptr<ValueBase>>& row_data = last_row.getRowData();
+    const std::string& last_id = row_data[0]->toString();//НЕТУ ПОЛЯ VALUE ПОЭТОМУ ИСПОЛЬЗУЕТЬСЧЯ ЭТОТ МЕТОД ТАК КАК НАСЛЕДНИК ЕГО РЕАЛИЗУЕТ
 
     int id_value = std::stoi(last_id) + 1;
     new_row.add_to_row("int", std::to_string(id_value));
@@ -105,9 +111,11 @@ void Table::insert_into_file()//записывает данные в форма�
         for (const auto& row : table_data) { // row_ptr - это unique_ptr<Row>
             std::string row_str;
             for (size_t j = 0; j < row.getRowSize(); ++j) {
-                const auto& row_data = row.getRowData();
-                row_str += row_data[j]->toString();
-                if (j < row.getRowSize() - 1) row_str += ":";
+                if(!row.isDeleted()){
+                    const std::vector<std::unique_ptr<ValueBase>>& row_data = row.getRowData();
+                    row_str += row_data[j]->toString();
+                    if (j < row.getRowSize() - 1) row_str += ":";
+                }
             }
             data_file << row_str << "\n";
         }
@@ -116,25 +124,31 @@ void Table::insert_into_file()//записывает данные в форма�
 
 void Table::read()//считавает из схемы и данных все в один вектор, который состоит из строк а строки из отдельных значений
 {
-    table_data.clear();
+    if(std::filesystem::exists("./DB_test/" + db_name + "/" + table_name + "_data.txt") && std::filesystem::exists("./DB_test/" + db_name + "/" + table_name + "_scheme.txt")){
+        //std::cout<<"1";
+        table_data.clear();
 
-    std::ifstream data_file("./DB_test/" + db_name + "/" + table_name + "_data.txt");
-    std::string line;
+        std::ifstream data_file("./DB_test/" + db_name + "/" + table_name + "_data.txt");
+        std::string line;
 
-    while (std::getline(data_file, line)) {
-        std::stringstream ss(line);
-        std::string token;
-        Row row;
-        int column_index = 0;
+        while (std::getline(data_file, line)) {
+            std::stringstream ss(line);
+            std::string token;
+            Row row;
+            int column_index = 0;
 
-        while (std::getline(ss, token, ':')) {
-            if (column_index < scheme.size()) {
-                std::string type = scheme[column_index].second;
-                row.add_to_row(type, token);
+            while (std::getline(ss, token, ':')) {
+                if (column_index < scheme.size()) {
+                    std::string type = scheme[column_index].second;
+                    row.add_to_row(type, token);
+                }
+                column_index++;
             }
-            column_index++;
+            table_data.push_back(std::move(row)); // нужно обернуть в unique_ptr
         }
-        table_data.push_back(std::move(row)); // нужно обернуть в unique_ptr
+    }
+    else{
+       // std::cout<<"0";
     }
 }
 
@@ -176,6 +190,18 @@ void Table::show_scheme()
     for(auto column_name : scheme){
         std::cout << column_name.first << " | " << column_name.second << " ";
     }
+}
+
+void Table::delete_row(const int& index)
+{
+    this->table_data[index-1].setAsDeleted();
+    this->is_edited = true;
+}
+
+void Table::delete_all()
+{
+    this->is_edited = true;
+    table_data.clear();
 }
 
 
