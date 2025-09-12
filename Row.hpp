@@ -41,6 +41,21 @@ class Row//это класс отдельной строки записи, он 
                 std::cerr << "ERROR: Unknown data type: '" << data_type << "'\n";
                 throw std::runtime_error("Unsupported data type");
             }
+
+        }
+
+        void update_value(int index, std::string data_type, const::std::string& value)
+        {
+            if (data_type == "int")
+                row_data[index] = std::make_unique<Value<int>>(std::stoi(value));
+            else if (data_type == "double")
+                row_data[index] = std::make_unique<Value<double>>(std::stod(value));
+            else if (data_type == "string")
+                row_data[index] = std::make_unique<Value<std::string>>(value);
+            else {
+                std::cerr << "ERROR: Unknown data type: '" << data_type << "'\n";
+                throw std::runtime_error("Unsupported data type");
+            }
         }
 
         inline int getRowSize() const

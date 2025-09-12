@@ -30,7 +30,7 @@ class Table{//при создании объекта сразу использо
         void defineScheme(std::vector<std::pair<std::string, std::string>> columns);
         void insert(const std::vector<std::string>& row);
         void insert_into_file();
-        void update();
+        void update(int index, std::string column_name, const std::string&);//пока метод ожидает что я точно укажу индекс в массиве и ожидает строку-значение на вход там уже можно преобразовать в нужный тип.
         void delete_row(const int& index);
         void delete_all();
         void read();
@@ -101,6 +101,18 @@ void Table::insert(const std::vector<std::string>& row)
     is_edited = true;
 }
 
+void Table::update(int row_index, std::string column_name, const std::string& value)
+{
+    int index = 0;
+    for(int i = 0; i< scheme.size(); i++){
+        if(scheme[i].first == column_name){
+            index = i;
+            table_data[row_index - 1].update_value(index, scheme[i].second, value);
+        }
+    }
+    //если такой колонки нету - выброс исключения или ошибка
+}
+
 
 void Table::insert_into_file()//записывает данные в формате data1:data2:data3 \n
 {
@@ -108,16 +120,21 @@ void Table::insert_into_file()//записывает данные в форма�
         std::ofstream data_file("./DB_test/" + db_name + "/" + table_name + "_data.txt");
         std::cout << "Writing " << table_data.size() << " rows to file" << std::endl;
 
-        for (const auto& row : table_data) { // row_ptr - это unique_ptr<Row>
-            std::string row_str;
-            for (size_t j = 0; j < row.getRowSize(); ++j) {
-                if(!row.isDeleted()){
-                    const std::vector<std::unique_ptr<ValueBase>>& row_data = row.getRowData();
+        for(size_t i = 0; i< table_data.size(); i++){
+            const auto& row = table_data[i];
+
+            if(!row.isDeleted()){
+                std::string row_str;
+                const auto& row_data = row.getRowData();
+
+                for(size_t j = 0; j<row.getRowSize(); j++){{
                     row_str += row_data[j]->toString();
                     if (j < row.getRowSize() - 1) row_str += ":";
-                }
+                }}
+
+                data_file << row_str;
+                if (i < table_data.size() - 1) data_file << "\n"; // ЧТОБЫ НЕ БЫЛО ПУСТОЙ СТРОКИ В КОНЦЕ
             }
-            data_file << row_str << "\n";
         }
     }
 }
