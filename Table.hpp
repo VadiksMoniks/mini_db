@@ -6,17 +6,23 @@
 #include <fstream>
 #include <vector>
 #include <unordered_map>
+#include <optional>
 #include "Row.hpp"
 /**
  * update DONE
  * delete DONE
- * search by different params
+ * search by different params DONE I GUES
  * more datatypes
+ * СДЕЛАТЬ ИНДЕКСЫ ТОЛЬКО ДЛЯ ID ПОЛЯ, ОСТАЛЬНОЕ - ЛИНЕЙНЫЙ ПОИСК. ЭТО ОПТИМАЛЬНО, НЕ НУЖНО ПОСТОЯННО ЗАПОЛНЯТЬ ХЭШ, А ЗНАЧИТ УСКОРЯЕТ РАБОТУ
+ * ОСТАВИТЬ ХЭЩ ТОЛЬКО ДЛЯ ПОЛЯ id ТО ЕСТЬ ПРОСТО СДЕЛАТЬ ПРОВЕРКУ НА ИМЯ ПОЛЯ В НАЧАЛЕ МЕТОДА search_by_value И МЕТОД ДОЛЖЕН ВОЗВРАЩАТЬ СТРОКУ А НЕ ПРОСТО ВЫВОДИТЬ
+ * 
+ * СДЕЛАТЬ АВТОИНКРЕМЕНТИРУЕМЫМ ID ДЛЯ ЭТОГО МОЖНО ЗАПИСАТЬ ЕЩЕ 1 ФАЙЛ ГДЕ БУДЕТ ХРАНИТЬСЯ ПОСЛЕДНЕЕ ЗНАЧЕНИЕ ПОЛЯ ID И ТУТ ТОЖЕ ПОЛЕ ДОПИСАТЬ
  */
 class Table{//при создании объекта сразу использовать вектор а при удалении записывать все в файл
 
     private:
         std::vector<Row> table_data;
+        std::unordered_map<std::string, int> id_index;
         std::vector<std::pair<std::string, std::string>> scheme;
         bool is_edited = false;
 
@@ -30,7 +36,7 @@ class Table{//при создании объекта сразу использо
         void createTable();
         void defineScheme(std::vector<std::pair<std::string, std::string>> columns);
         int find_column_index(std::string& column_name);//МОЖНО СДЕЛАТЬ ПРИВАТНЫМ
-        /*const Row&*/  void search_by_value(std::string column_name, std::string value);
+        std::optional<std::reference_wrapper<const Row>>  search_by_value(std::string column_name, std::string value);
 
         void insert(const std::vector<std::string>& row);
         void insert_into_file();
@@ -114,6 +120,7 @@ void Table::insert(const std::vector<std::string>& row)
         new_row.add_to_row(scheme[i + 1].second, row[i]);
 
     table_data.push_back(std::move(new_row));
+    id_index.insert({new_row.getRowData()[0]->toString(), table_data.size() - 1});
     is_edited = true;
 }
 
@@ -178,6 +185,9 @@ void Table::read()//считавает из схемы и данных все в
                 column_index++;
             }
             table_data.push_back(std::move(row)); // нужно обернуть в unique_ptr
+            //std::cout<<"1 \n";
+            const auto& id_value = table_data.back().getRowData();//ТУТ ТИПА Я ИНДЕКСИРУЮ. Я ПОЛУЧАЮ ЗНАЧЕНИЕ ID - ОНО БУДЕТ КЛЮЧЕМ, А ИНДЕКС В МАССИВЕ - ЗНАЧЕНИЕ ДЛЯ БЫСТРОГО ПОИСКА
+            id_index.insert({id_value[0]->toString(), table_data.size() - 1});
         }
     }
     else{
@@ -201,32 +211,26 @@ void Table::read_scheme() {
     }
 }
 
-void Table::search_by_value(std::string column_name, std::string value)
+std::optional<std::reference_wrapper<const Row>>  Table::search_by_value(std::string column_name, std::string value)
 {
-    int index = this->find_column_index(column_name);
-
-    std::unordered_map<std::string, int> map;
-
-    for(size_t i = 0; i<table_data.size(); i++){
-        const auto& row = table_data[i].getRowData();
-        map.insert({row[index]->toString(), i});
-    }
-
-    auto searched_row_index = map.find(value);
-    if(searched_row_index != map.end()){
-        auto& searched_row = table_data[searched_row_index->second].getRowData();
-
-        for(size_t i = 0; i<searched_row.size(); i++){
-            std::cout<< searched_row[i]->toString();
-            if(i < searched_row.size() - 1){
-                std::cout<< " : ";
-            }
+    if(column_name == "id"){
+        auto searched_row_index = id_index.find(value);
+        if(searched_row_index != id_index.end()){
+            return table_data[searched_row_index->second];
         }
-        std::cout<<"\n";
     }
     else{
-        std::cout<<"No matches found \n";
+        int index = this->find_column_index(column_name);
+        for(size_t i = 0; i<table_data.size(); i++){
+            if(value == table_data[i].getRowData()[index]->toString()){
+                return table_data[i];
+            }
+        }
     }
+    //ТУТ КОРОЧЕ ЗАМЕНИТЬ НА RETURN ЧТОБЫ Я ПРОСТО ВЕРНУЛ СООБЩЕНИЕ, ЕСЛИ НЕ НАЙДЕНО
+    return std::nullopt;
+    //std::cout<<"No matches found \n";
+
 }
 
 void Table::show_table_data() {

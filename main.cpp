@@ -28,12 +28,8 @@ int main()
    // db.table->update(3, "name", "Insomnia");
     //db.table->delete_row(3);
     db.table->show_table_data();
-    //std::cout<<"\n";
-    //db.table->search_by_value("name", "Insomnia");
-    //std::cout<<"\n";
-    //db.table->search_by_value("name", "John");
-    //std::cout<<"\n";
-    //db.table->search_by_value("id", "1");
+    std::cout<<"\n";
+    
     } catch (const std::exception& e) {
         std::cerr << "EXCEPTION: " << e.what() << std::endl;
     }
