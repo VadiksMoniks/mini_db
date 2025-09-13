@@ -5,9 +5,10 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <unordered_map>
 #include "Row.hpp"
 /**
- * update
+ * update DONE
  * delete DONE
  * search by different params
  * more datatypes
@@ -28,11 +29,15 @@ class Table{//при создании объекта сразу использо
         ~Table();
         void createTable();
         void defineScheme(std::vector<std::pair<std::string, std::string>> columns);
+        int find_column_index(std::string& column_name);//МОЖНО СДЕЛАТЬ ПРИВАТНЫМ
+        /*const Row&*/  void search_by_value(std::string column_name, std::string value);
+
         void insert(const std::vector<std::string>& row);
         void insert_into_file();
         void update(int index, std::string column_name, const std::string&);//пока метод ожидает что я точно укажу индекс в массиве и ожидает строку-значение на вход там уже можно преобразовать в нужный тип.
         void delete_row(const int& index);
         void delete_all();
+
         void read();
         void read_scheme();
         void show_table_data();
@@ -80,6 +85,17 @@ void Table::defineScheme(std::vector<std::pair<std::string, std::string>> column
     scheme.close();
 }
 
+int Table::find_column_index(std::string& column_name)//ДОБАВИТЬ ПРОВЕРКИ И ИСКЛЮЧЕНИЯ, ЕСЛИ НЕ НАЙДЕНо
+{
+    int index = 0;
+    for(int i = 0; i< scheme.size(); i++){
+        if(scheme[i].first == column_name){
+            index = i;
+        }
+    }
+    return index;
+}
+
 void Table::insert(const std::vector<std::string>& row)
 {
     if (row.size() + 1 != scheme.size())
@@ -107,7 +123,7 @@ void Table::update(int row_index, std::string column_name, const std::string& va
     for(int i = 0; i< scheme.size(); i++){
         if(scheme[i].first == column_name){
             index = i;
-            table_data[row_index - 1].update_value(index, scheme[i].second, value);
+            table_data[this->find_column_index(column_name)].update_value(index, scheme[i].second, value);
         }
     }
     //если такой колонки нету - выброс исключения или ошибка
@@ -182,6 +198,34 @@ void Table::read_scheme() {
         if (std::getline(ss, column_name, ':') && std::getline(ss, column_type)) {
             scheme.push_back({ column_name, column_type });
         }
+    }
+}
+
+void Table::search_by_value(std::string column_name, std::string value)
+{
+    int index = this->find_column_index(column_name);
+
+    std::unordered_map<std::string, int> map;
+
+    for(size_t i = 0; i<table_data.size(); i++){
+        const auto& row = table_data[i].getRowData();
+        map.insert({row[index]->toString(), i});
+    }
+
+    auto searched_row_index = map.find(value);
+    if(searched_row_index != map.end()){
+        auto& searched_row = table_data[searched_row_index->second].getRowData();
+
+        for(size_t i = 0; i<searched_row.size(); i++){
+            std::cout<< searched_row[i]->toString();
+            if(i < searched_row.size() - 1){
+                std::cout<< " : ";
+            }
+        }
+        std::cout<<"\n";
+    }
+    else{
+        std::cout<<"No matches found \n";
     }
 }
 
