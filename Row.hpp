@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include <functional>
 #include "Value.hpp"
 #include "ValueBase.hpp"
 #include <stdexcept>
@@ -12,16 +13,34 @@
  * @brief класс строки данных
  * @param row_data вектор строки данных
  * @param is_deleted флаг, указывающий, что строка удалена, и ее не нужно записывать обратно в файл
+ * @param factories - фабрика, которая хранит в себе лямбда функции - способы преобразования данных, чтобы потом записать их в вектор
  */
 class Row//это класс отдельной строки записи, он будет состоять из отдельных записей типа Value
 {
     private:
         std::vector<std::unique_ptr<ValueBase>> row_data;
+        using FactoryFunc = std::function<std::unique_ptr<ValueBase>(const std::string&)>;
+        std::unordered_map<std::string, FactoryFunc> factories;
         bool is_deleted = false;
 
     public:
     
-        Row() = default;
+        Row() {
+            factories["int"] = [](const std::string& v) {
+                return std::make_unique<Value<int>>(std::stoi(v));
+            };
+            factories["double"] = [](const std::string& v) {
+                return std::make_unique<Value<double>>(std::stod(v));
+            };
+            factories["string"] = [](const std::string& v) {
+                return std::make_unique<Value<std::string>>(v);
+            };
+            factories["char"] = [](const std::string& v) {
+                if (v.empty())
+                    throw std::runtime_error("Empty char string");
+                return std::make_unique<Value<char>>(v[0]);
+            };
+        }
         
         // Копирование запрещено (из-за unique_ptr)
         Row(const Row&) = delete;
@@ -40,13 +59,10 @@ class Row//это класс отдельной строки записи, он 
         */           
        void add_to_row(const std::string& data_type, const std::string& value) {
           //  std::cout << "Adding value: '" << value << "' with type: '" << data_type << "'\n";
-
-            if (data_type == "int")
-                row_data.push_back(std::make_unique<Value<int>>(std::stoi(value)));
-            else if (data_type == "double")
-                row_data.push_back(std::make_unique<Value<double>>(std::stod(value)));
-            else if (data_type == "string")
-                row_data.push_back(std::make_unique<Value<std::string>>(value));
+            auto it = factories.find(data_type);
+            if (it != factories.end()){
+                row_data.push_back(it->second(value));
+            }
             else {
                 std::cerr << "ERROR: Unknown data type: '" << data_type << "'\n";
                 throw std::runtime_error("Unsupported data type");
@@ -64,12 +80,10 @@ class Row//это класс отдельной строки записи, он 
          */
         void update_value(int index, std::string data_type, const::std::string& value)
         {
-            if (data_type == "int")
-                row_data[index] = std::make_unique<Value<int>>(std::stoi(value));
-            else if (data_type == "double")
-                row_data[index] = std::make_unique<Value<double>>(std::stod(value));
-            else if (data_type == "string")
-                row_data[index] = std::make_unique<Value<std::string>>(value);
+            auto it = factories.find(data_type);
+            if (it != factories.end()){
+                row_data[index] = it->second(value);
+            }
             else {
                 std::cerr << "ERROR: Unknown data type: '" << data_type << "'\n";
                 throw std::runtime_error("Unsupported data type");
