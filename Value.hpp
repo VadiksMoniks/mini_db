@@ -20,6 +20,8 @@ class Value : public ValueBase//это класс одного значения 
         std::string toString() const override {
             if constexpr (std::is_same<T, std::string>::value) {
                 return value; // без std::to_string
+            } else if constexpr (std::is_same_v<T, char>) {
+                return std::string(1, value); // строка из одного символа
             } else {
                 return std::to_string(value);
             }

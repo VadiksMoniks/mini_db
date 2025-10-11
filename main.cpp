@@ -22,12 +22,30 @@ int main()
 
     //db.table->read(); // ЧТОБЫ ПРОСТО ГЛЯНУТЬ, ЧТО В ФАЙЛК
 
-   // std::vector<std::string> row3 = {"John", "20"};
-   // db.table->insert(row3);
-   // db.table->show_table_data();
-   // db.table->update(3, "name", "Insomnia");
-    //db.table->delete_row(3);
-    db.table->show_table_data();
+    //std::vector<std::string> row4 = {"John", "20", "m", "1"};
+    //db.table->insert(row4);
+  //  db.table->show_table_data();
+    //db.table->update(3, "name", "Insomnia");
+    //db.table->delete_row(4);
+    auto scheme = db.table->get_scheme();
+    auto& table_data = db.table->get_table_data();
+
+    for (auto& column_name : scheme) {
+            std::cout << column_name.first << " | ";
+    }
+
+    std::cout << std::endl;
+
+    for (auto& row : table_data) {
+        const auto& row_data = row.getRowData();
+        if(!row.isDeleted()){
+            for (auto& value : row_data) {
+                std::cout << value->toString() << " | ";
+            }
+        }
+        std::cout << std::endl;
+    }
+
     std::cout<<"\n";
     
     } catch (const std::exception& e) {

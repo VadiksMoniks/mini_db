@@ -35,6 +35,7 @@ class Table{
         std::unordered_map<std::string, int> id_index;
         std::vector<std::pair<std::string, std::string>> scheme;
         bool is_edited = false;
+       // int last_id = 0;
 
     public:
         std::string db_name;
@@ -56,8 +57,8 @@ class Table{
 
         void read();
         void read_scheme();
-        void show_table_data();
-        void show_scheme();
+        const std::vector<Row>& get_table_data() const;
+        std::vector<std::pair<std::string, std::string>> get_scheme();
 };
 
 
@@ -143,16 +144,16 @@ void Table::insert(const std::vector<std::string>& row)
 
     const Row& last_row = table_data.back();
     const std::vector<std::unique_ptr<ValueBase>>& row_data = last_row.getRowData();
-    const std::string& last_id = row_data[0]->toString();//НЕТУ ПОЛЯ VALUE ПОЭТОМУ ИСПОЛЬЗУЕТЬСЧЯ ЭТОТ МЕТОД ТАК КАК НАСЛЕДНИК ЕГО РЕАЛИЗУЕТ
-
+    const std::string& last_id = row_data[0]->toString();//НЕТУ ПОЛЯ VALUE ПОЭТОМУ ИСПОЛЬЗУЕТЬСЯ ЭТОТ МЕТОД ТАК КАК НАСЛЕДНИК ЕГО РЕАЛИЗУЕТ
     int id_value = std::stoi(last_id) + 1;
+
     new_row.add_to_row("int", std::to_string(id_value));
 
     for (size_t i = 0; i < row.size(); ++i)
         new_row.add_to_row(scheme[i + 1].second, row[i]);
 
     table_data.push_back(std::move(new_row));
-    id_index.insert({new_row.getRowData()[0]->toString(), table_data.size() - 1});
+    id_index.insert({table_data.back().getRowData()[0]->toString(), table_data.size() - 1});
     is_edited = true;
 }
 
@@ -177,6 +178,7 @@ void Table::update(int row_index, std::string column_name, const std::string& va
 /**
  * @brief вставка данных в файл в формате value1:value2:valu3...
  * @note вызываеться автоматически в деструкторе после завершения работы с таблицей
+ * @note ЗАПИСЫВАЕТ ПУСТУЮ СТРОКУ В КОНЕЦ ФАЙЛА - ЭТО ПРИВОДИТ К КРАШАМ ПРОГРАММЫ!!!!!!
  */
 void Table::insert_into_file()//записывает данные в формате data1:data2:data3 \n
 {
@@ -290,35 +292,20 @@ std::optional<std::reference_wrapper<const Row>>  Table::search_by_value(std::st
 }
 
 /**
- * @brief вывод всей таблицы в консоль
- * @todo переделать под простой возврат данных, чтобы тут не было принта
+ * @brief возврат данных
  */
-void Table::show_table_data() {
-    for (auto& column_name : scheme) {
-        std::cout << column_name.first << " | ";
-    }
-    std::cout << std::endl;
-
-    for (auto& row : table_data) {
-        const auto& row_data = row.getRowData();
-        if(!row.isDeleted()){
-            for (auto& value : row_data) {
-                std::cout << value->toString() << " | ";
-            }
-        }
-        std::cout << std::endl;
-    }
+const std::vector<Row>& Table::get_table_data() const
+{
+   return table_data;
 }
 
 /**
  * @brief вывод схемы таблицы в консоль
  * @todo переделать под простой возврат схемы, чтобы тут не было принта
  */
-void Table::show_scheme()
+std::vector<std::pair<std::string, std::string>> Table::get_scheme()
 {
-    for(auto column_name : scheme){
-        std::cout << column_name.first << " | " << column_name.second << " ";
-    }
+    return scheme;
 }
 
 

@@ -40,6 +40,9 @@ class Row//это класс отдельной строки записи, он 
                     throw std::runtime_error("Empty char string");
                 return std::make_unique<Value<char>>(v[0]);
             };
+            factories["bool"] = [](const std::string &v) {
+                return std::make_unique<Value<bool>>(v == "true" || v == "1");
+            };
         }
         
         // Копирование запрещено (из-за unique_ptr)
