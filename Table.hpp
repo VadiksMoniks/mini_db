@@ -12,11 +12,11 @@
  * @see update method update() DONE
  * @see delete methods delete_all() delete_row() DONE
  * @see search by different params search_by_value() DONE I GUES
- * @todo more datatypes
+ * @todo more data types
  * @todo СДЕЛАТЬ ИНДЕКСЫ ТОЛЬКО ДЛЯ ID ПОЛЯ, ОСТАЛЬНОЕ - ЛИНЕЙНЫЙ ПОИСК. ЭТО ОПТИМАЛЬНО, НЕ НУЖНО ПОСТОЯННО ЗАПОЛНЯТЬ ХЭШ, А ЗНАЧИТ УСКОРЯЕТ РАБОТУ
  * @todo ОСТАВИТЬ ХЭШ ТОЛЬКО ДЛЯ ПОЛЯ id ТО ЕСТЬ ПРОСТО СДЕЛАТЬ ПРОВЕРКУ НА ИМЯ ПОЛЯ В НАЧАЛЕ МЕТОДА search_by_value И МЕТОД ДОЛЖЕН ВОЗВРАЩАТЬ СТРОКУ А НЕ ПРОСТО ВЫВОДИТЬ
  * 
- * @todo СДЕЛАТЬ АВТОИНКРЕМЕНТИРУЕМЫМ ID ДЛЯ ЭТОГО МОЖНО ЗАПИСАТЬ ЕЩЕ 1 ФАЙЛ ГДЕ БУДЕТ ХРАНИТЬСЯ ПОСЛЕДНЕЕ ЗНАЧЕНИЕ ПОЛЯ ID И ТУТ ТОЖЕ ПОЛЕ ДОПИСАТЬ
+ * @see автоинкрементное уникальное id поле
  */
 
  /**
@@ -35,7 +35,7 @@ class Table{
         std::unordered_map<std::string, int> id_index;
         std::vector<std::pair<std::string, std::string>> scheme;
         bool is_edited = false;
-       // int last_id = 0;
+        unsigned int last_id;
 
     public:
         std::string db_name;
@@ -52,11 +52,13 @@ class Table{
         void insert(const std::vector<std::string>& row);
         void insert_into_file();
         void update(int index, std::string column_name, const std::string&);//пока метод ожидает что я точно укажу индекс в массиве и ожидает строку-значение на вход там уже можно преобразовать в нужный тип.
+        void update_id_value_file();
         void delete_row(const int& index);
         void delete_all();
 
         void read();
         void read_scheme();
+        void read_last_id_value();
         const std::vector<Row>& get_table_data() const;
         std::vector<std::pair<std::string, std::string>> get_scheme();
 };
@@ -67,6 +69,9 @@ Table::Table(std::string db_name, std::string table_name) : db_name(db_name), ta
 {
     this->read_scheme();
     this->read();
+    this->read_last_id_value();
+
+    std::cout << "Last ID value is:" << last_id << "\n";
 }
 
 /*
@@ -77,6 +82,7 @@ Table::~Table()
 {
    // std::cout << "Table destructor called\n";
     this->insert_into_file();
+    this->update_id_value_file();
     table_data.clear();
 }
 
@@ -86,6 +92,11 @@ void Table::createTable()
     if(std::filesystem::exists("./DB_test/" + db_name) && std::filesystem::is_directory("./DB_test/" + db_name)){
         std::ofstream scheme_file ("./DB_test/" + db_name + "/" + table_name + "_scheme.txt");
         std::ofstream data_file ("./DB_test/" + db_name + "/" + table_name + "_data.txt");
+        std::ofstream last_id_file ("./DB_test/" + db_name + "/" + table_name + "_last_id_value.txt");
+
+        last_id = 1;
+        last_id_file << last_id;
+        last_id_file.close();
     }
     else{
         //ДОПИСАТЬ ЭТОТ БЛОК
@@ -144,8 +155,7 @@ void Table::insert(const std::vector<std::string>& row)
 
     const Row& last_row = table_data.back();
     const std::vector<std::unique_ptr<ValueBase>>& row_data = last_row.getRowData();
-    const std::string& last_id = row_data[0]->toString();//НЕТУ ПОЛЯ VALUE ПОЭТОМУ ИСПОЛЬЗУЕТЬСЯ ЭТОТ МЕТОД ТАК КАК НАСЛЕДНИК ЕГО РЕАЛИЗУЕТ
-    int id_value = std::stoi(last_id) + 1;
+    int id_value = last_id;
 
     new_row.add_to_row("int", std::to_string(id_value));
 
@@ -153,8 +163,9 @@ void Table::insert(const std::vector<std::string>& row)
         new_row.add_to_row(scheme[i + 1].second, row[i]);
 
     table_data.push_back(std::move(new_row));
-    id_index.insert({table_data.back().getRowData()[0]->toString(), table_data.size() - 1});
+    id_index.insert({std::to_string(last_id), table_data.size() - 1});
     is_edited = true;
+    last_id++;
 }
 
 /**
@@ -205,9 +216,16 @@ void Table::insert_into_file()//записывает данные в форма�
     }
 }
 
+void Table::update_id_value_file()
+{
+    std::ofstream id_value_file("./DB_test/" + db_name + "/" + table_name + "_last_id_value.txt");
+    id_value_file << last_id;
+}
+
 /**
  * @brief считавает из файла данных все в один вектор table_data, который состоит из строк а строки из отдельных значений
  * @note вызываеться в конструкторе при создании оьбъекта таблицы
+ * @todo ПРИВЕСТИ К ЕДИНОМУ ВИДУ ВСЕ ПРОВЕРКИ И ЛОГИКУ ФАЙЛОВ read_
  */
 void Table::read()
 {
@@ -245,6 +263,7 @@ void Table::read()
 /**
  * @brief считавает схему таблицы из файла в scheme
  * @note вызываеться в конструкторе при создании оьбъекта таблицы
+ * @todo ПРИВЕСТИ К ЕДИНОМУ ВИДУ ВСЕ ПРОВЕРКИ И ЛОГИКУ ФАЙЛОВ read_
  */
 void Table::read_scheme() {
     scheme.clear();
@@ -260,6 +279,26 @@ void Table::read_scheme() {
             scheme.push_back({ column_name, column_type });
         }
     }
+}
+
+/**
+ * @todo ПРИВЕСТИ К ЕДИНОМУ ВИДУ ВСЕ ПРОВЕРКИ И ЛОГИКУ ФАЙЛОВ read_
+ * @todo ПРОВЕРКИ
+ */
+void Table::read_last_id_value()
+{
+    std::ifstream id_value_file("./DB_test/" + db_name + "/" + table_name + "_last_id_value.txt");
+
+    if(!id_value_file.is_open()){
+        throw std::runtime_error("Could not open id value file");
+    }
+
+    std::string line;
+    if (!std::getline(id_value_file, line) || line.empty()) {
+        throw std::runtime_error("ID value file is empty or invalid");
+    }
+    std::getline(id_value_file, line);
+    last_id = std::stoi(line);
 }
 
 /**
@@ -301,7 +340,6 @@ const std::vector<Row>& Table::get_table_data() const
 
 /**
  * @brief вывод схемы таблицы в консоль
- * @todo переделать под простой возврат схемы, чтобы тут не было принта
  */
 std::vector<std::pair<std::string, std::string>> Table::get_scheme()
 {
@@ -315,10 +353,17 @@ std::vector<std::pair<std::string, std::string>> Table::get_scheme()
  * @todo поменять под поиск индекса через хеш мапу так как индексы будут уникальные и автоинкрементируемые
  * @note каждая строка Row может быть помечена как is_deleted, и при записи в файл она будет проигнорирована
  */
-void Table::delete_row(const int& index)
+void Table::delete_row(const int& index)//ID ПОКА ЧТО ТУТ ПЕРЕДАЕТЬСЯ ТОЛЬКО ЗНАЧЕНИЕ ID ПОЛЯ
 {
-    this->table_data[index-1].setAsDeleted();
-    this->is_edited = true;
+    auto deleted_row_id_value = id_index.find(std::to_string(index));
+    if(deleted_row_id_value != id_index.end()){
+        id_index.erase(std::to_string(index));
+        this->table_data[deleted_row_id_value->second].setAsDeleted();
+        this->is_edited = true;
+    }
+    else{
+        throw std::runtime_error("There is no rows with such id value");
+    }
 }
 
 /**
