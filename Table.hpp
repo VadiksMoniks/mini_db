@@ -13,9 +13,7 @@
  * @see delete methods delete_all() delete_row() DONE
  * @see search by different params search_by_value() DONE I GUES
  * @todo more data types
- * @todo СДЕЛАТЬ ИНДЕКСЫ ТОЛЬКО ДЛЯ ID ПОЛЯ, ОСТАЛЬНОЕ - ЛИНЕЙНЫЙ ПОИСК. ЭТО ОПТИМАЛЬНО, НЕ НУЖНО ПОСТОЯННО ЗАПОЛНЯТЬ ХЭШ, А ЗНАЧИТ УСКОРЯЕТ РАБОТУ
- * @todo ОСТАВИТЬ ХЭШ ТОЛЬКО ДЛЯ ПОЛЯ id ТО ЕСТЬ ПРОСТО СДЕЛАТЬ ПРОВЕРКУ НА ИМЯ ПОЛЯ В НАЧАЛЕ МЕТОДА search_by_value И МЕТОД ДОЛЖЕН ВОЗВРАЩАТЬ СТРОКУ А НЕ ПРОСТО ВЫВОДИТЬ
- * 
+ * @note НЕТУ ПРОВЕРОК СООТВЕТСТВИЯ ДАННЫХ СХЕМЕ, КОЛИЧЕСТВО ДАННЫХ В СТРОКЕ И ЧТО ДЕЛАТЬ С ПРОПУЩЕНЫМИ ПОЛЯМИ В СТРОКЕ?
  * @see автоинкрементное уникальное id поле
  */
 
@@ -27,6 +25,7 @@
   * is_edited - для того, чтобы после конца работы с таблицей, если она менялась - обновить файл с данными
   * db_name - имя базы данных - папка с файлами
   * table_name - имя файа, откуда считываються, и куда пишуться данные
+  * НУЖНО ЧТО-ТО РЕШАТЬ С РАБОТОЙ ПРОГРАММЫ, ТАК КАК ЛОГИКА РАБОТЫ КЛАССА БД ПРОТИВОРЕЧИТ ЛОГИКЕ РАБОТЫ ЭТОГО КЛАССА
   */
 class Table{
 
@@ -46,12 +45,12 @@ class Table{
         ~Table();
         void createTable();
         void defineScheme(std::vector<std::pair<std::string, std::string>> columns);
-        int find_column_index(std::string& column_name);//МОЖНО СДЕЛАТЬ ПРИВАТНЫМ
-        std::optional<std::reference_wrapper<const Row>>  search_by_value(std::string column_name, std::string value);
+        int find_column_index(const std::string& column_name);//МОЖНО СДЕЛАТЬ ПРИВАТНЫМ
+        std::optional<std::reference_wrapper<const Row>>  search_by_value(const std::string& column_name, const std::string& value);
 
         void insert(const std::vector<std::string>& row);
         void insert_into_file();
-        void update(int index, std::string column_name, const std::string&);//пока метод ожидает что я точно укажу индекс в массиве и ожидает строку-значение на вход там уже можно преобразовать в нужный тип.
+        void update(int id, std::string column_name, const std::string&);//пока метод ожидает что я точно укажу индекс в массиве и ожидает строку-значение на вход там уже можно преобразовать в нужный тип.
         void update_id_value_file();
         void delete_row(const int& index);
         void delete_all();
@@ -67,11 +66,15 @@ class Table{
 /// @brief при создании объекта таблицы, считать данные из файла, если есть, и считать схему таблицы
 Table::Table(std::string db_name, std::string table_name) : db_name(db_name), table_name(table_name)
 {
-    this->read_scheme();
-    this->read();
-    this->read_last_id_value();
-
-    std::cout << "Last ID value is:" << last_id << "\n";
+    try{
+        this->read_scheme();
+        this->read();
+        this->read_last_id_value();
+    }
+    catch(const std::runtime_error& e){
+        std::cerr << "Error reading table: " << e.what() << std::endl;
+    }
+    //std::cout << "Last ID value is:" << last_id << "\n";
 }
 
 /*
@@ -81,9 +84,14 @@ Table::Table(std::string db_name, std::string table_name) : db_name(db_name), ta
 Table::~Table()
 {
    // std::cout << "Table destructor called\n";
-    this->insert_into_file();
-    this->update_id_value_file();
-    table_data.clear();
+    try{
+        this->insert_into_file();
+        this->update_id_value_file();
+        table_data.clear();
+    }
+    catch(const std::runtime_error& e){
+        std::cerr << e.what();
+    }
 }
 
 /// @brief создание файлов схемы и данных
@@ -128,36 +136,30 @@ void Table::defineScheme(std::vector<std::pair<std::string, std::string>> column
  * то есть, если я хочу обновить name поле, я должен узнать в векторе его индекс, а потом уже обновлять значение
  * @param column_name - имя искомой колонки(id, name, email_address...)
  */
-int Table::find_column_index(std::string& column_name)//ДОБАВИТЬ ПРОВЕРКИ И ИСКЛЮЧЕНИЯ, ЕСЛИ НЕ НАЙДЕНо
+int Table::find_column_index(const std::string& column_name)
 {
-    int index = 0;
     for(int i = 0; i< scheme.size(); i++){
         if(scheme[i].first == column_name){
-            index = i;
-            break;
+            return static_cast<int>(i);
         }
     }
-    return index;
+
+    throw std::runtime_error("Column '" + column_name + "' not found in table");
 }
 
 /**
  * @brief вставка в вектор данных 
  * @param row - вектор данных, он должен идти в таком же порядке, в каком идут данные через схему, то есть name, email_address,...
  * поле id автоматически дописываеться в начало вектора исходя из последнего значения id
- * @note переделать под auto increment для этого нужно отдельное поле last_id, которое будет в отдельном файле
  */
 void Table::insert(const std::vector<std::string>& row)
 {
-    if (row.size() + 1 != scheme.size())
-        throw std::runtime_error("Too few arguments passed!");//("Row size does not match scheme size");
+    if (row.size() + 1 != scheme.size())//+ 1 потому, что id добавляеться автоматически
+        throw std::runtime_error("Wrong number of arguments. It should be: " + scheme.size());//("Row size does not match scheme size");
 
     Row new_row;
 
-    const Row& last_row = table_data.back();
-    const std::vector<std::unique_ptr<ValueBase>>& row_data = last_row.getRowData();
-    int id_value = last_id;
-
-    new_row.add_to_row("int", std::to_string(id_value));
+    new_row.add_to_row("int", std::to_string(last_id));
 
     for (size_t i = 0; i < row.size(); ++i)
         new_row.add_to_row(scheme[i + 1].second, row[i]);
@@ -174,22 +176,34 @@ void Table::insert(const std::vector<std::string>& row)
  * @param column_name - имя колонки в которой замениться значение
  * @param value - новое значение для замены
  */
-void Table::update(int row_index, std::string column_name, const std::string& value)
+void Table::update(int id, std::string column_name, const std::string& value)
 {
-    int index = 0;
-    for(int i = 0; i< scheme.size(); i++){
-        if(scheme[i].first == column_name){
-            index = i;
-            table_data[this->find_column_index(column_name)].update_value(index, scheme[i].second, value);
+    try{
+
+        auto index = id_index.find(std::to_string(id));
+
+        if(index != id_index.end()){
+            for(int i = 0; i< scheme.size(); i++){
+                if(scheme[i].first == column_name){
+                    table_data[index->second].update_value(this->find_column_index(column_name), scheme[i].second, value);
+                }
+            }
         }
+        else{
+            throw std::runtime_error("Incorrect id value");
+        }
+
     }
-    //если такой колонки нету - выброс исключения или ошибка
+    catch(const std::runtime_error& e){
+        std::cerr << "Can`t update value: " << e.what(); 
+    }
 }
 
 /**
  * @brief вставка данных в файл в формате value1:value2:valu3...
  * @note вызываеться автоматически в деструкторе после завершения работы с таблицей
  * @note ЗАПИСЫВАЕТ ПУСТУЮ СТРОКУ В КОНЕЦ ФАЙЛА - ЭТО ПРИВОДИТ К КРАШАМ ПРОГРАММЫ!!!!!!
+ * @note ТУТ ВНИМАТЕЛЬНО. ВРОДЕ ПУСТУЮ СТРОКУ ДОПИСЫВАЕТ, ЕСЛИ УДАЛЯТЬ СТРОКИ!!!!!!
  */
 void Table::insert_into_file()//записывает данные в формате data1:data2:data3 \n
 {
@@ -211,6 +225,10 @@ void Table::insert_into_file()//записывает данные в форма�
 
                 data_file << row_str;
                 if (i < table_data.size() - 1) data_file << "\n"; // ЧТОБЫ НЕ БЫЛО ПУСТОЙ СТРОКИ В КОНЦЕ
+                //вроде бы здесь ошибка, так как если удалять строку, особенно с конца, то добавление переноса строки будет
+                if(!data_file){
+                    throw std::runtime_error("Can`t write to to data file");
+                }
             }
         }
     }
@@ -220,6 +238,10 @@ void Table::update_id_value_file()
 {
     std::ofstream id_value_file("./DB_test/" + db_name + "/" + table_name + "_last_id_value.txt");
     id_value_file << last_id;
+
+    if(!id_value_file){
+        throw std::runtime_error("Can`t write id value to file");
+    }
 }
 
 /**
@@ -294,9 +316,9 @@ void Table::read_last_id_value()
     }
 
     std::string line;
-    if (!std::getline(id_value_file, line) || line.empty()) {
-        throw std::runtime_error("ID value file is empty or invalid");
-    }
+   // if (!std::getline(id_value_file, line) || line.empty()) {
+   //     throw std::runtime_error("ID value file is empty or invalid");
+   // }
     std::getline(id_value_file, line);
     last_id = std::stoi(line);
 }
@@ -308,26 +330,31 @@ void Table::read_last_id_value()
  * @note поскольку поле id индексировано, то там поиск через хеш мапу, остальные поля - простой перебор
  * @return вернет вектор данных
  */
-std::optional<std::reference_wrapper<const Row>>  Table::search_by_value(std::string column_name, std::string value)
+std::optional<std::reference_wrapper<const Row>>  Table::search_by_value(const std::string& column_name, const std::string& value)
 {
-    if(column_name == "id"){
-        auto searched_row_index = id_index.find(value);
-        if(searched_row_index != id_index.end()){
-            return table_data[searched_row_index->second];
+    try{
+        if(column_name == "id"){
+            auto searched_row_index = id_index.find(value);
+            if(searched_row_index != id_index.end()){
+                return table_data[searched_row_index->second];
+            }
         }
-    }
-    else{
-        int index = this->find_column_index(column_name);
-        for(size_t i = 0; i<table_data.size(); i++){
-            if(value == table_data[i].getRowData()[index]->toString()){
-                return table_data[i];
+        else{
+            int index = this->find_column_index(column_name);
+            for(size_t i = 0; i<table_data.size(); i++){
+                if(value == table_data[i].getRowData()[index]->toString()){
+                    return table_data[i];
+                }
             }
         }
     }
-    //ТУТ КОРОЧЕ ЗАМЕНИТЬ НА RETURN ЧТОБЫ Я ПРОСТО ВЕРНУЛ СООБЩЕНИЕ, ЕСЛИ НЕ НАЙДЕНО
-    return std::nullopt;
-    //std::cout<<"No matches found \n";
+    catch(const std::runtime_error& e){
+        std::cerr << e.what();
+        return std::nullopt;
+    }
 
+    std::cout<<"No matches found \n";
+    return std::nullopt;
 }
 
 /**
@@ -350,7 +377,6 @@ std::vector<std::pair<std::string, std::string>> Table::get_scheme()
 /**
  * @brief удаляет строку
  * @param index - индекс строки, ее значение поля id
- * @todo поменять под поиск индекса через хеш мапу так как индексы будут уникальные и автоинкрементируемые
  * @note каждая строка Row может быть помечена как is_deleted, и при записи в файл она будет проигнорирована
  */
 void Table::delete_row(const int& index)//ID ПОКА ЧТО ТУТ ПЕРЕДАЕТЬСЯ ТОЛЬКО ЗНАЧЕНИЕ ID ПОЛЯ

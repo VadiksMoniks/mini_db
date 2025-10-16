@@ -79,12 +79,12 @@ class Database{
      * @param columns - новая схема
      * @note ВРЯД ЛИ НУЖЕН МОЖНО БУДЕТ УБРАТЬ
      */
-    inline void Database::defineScheme(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns)
+    /*inline void Database::defineScheme(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns)
     {
         if (!table || table->table_name != table_name)
             use_table(table_name);
 
         table->defineScheme(columns);
-    }
+    }*/
 
 #endif
