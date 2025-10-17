@@ -54,9 +54,9 @@ class Database{
      */
     inline void Database::createTable(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& scheme)
     {
-        table = std::make_unique<Table>(db_name, table_name);
-        table->createTable();
-        table->defineScheme(scheme);
+        //table = std::make_unique<Table>(db_name, table_name);
+        table->createTable(db_name, table_name);
+        table->defineScheme(db_name, table_name, scheme);
         // удаление не нужно, умный указатель сам освободит память
     }
     

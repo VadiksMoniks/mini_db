@@ -40,24 +40,28 @@ class Table{
         std::string db_name;
         std::string table_name;
 
+    private:
+        std::ifstream open_input_file(const std::string& path);
+        int find_column_index(const std::string& column_name);
+
+        void read_data();
+        void read_scheme();
+        void read_last_id_value();
+
     public:
         Table(std::string db_name, std::string table_name);
         ~Table();
-        void createTable();
-        void defineScheme(std::vector<std::pair<std::string, std::string>> columns);
-        int find_column_index(const std::string& column_name);//МОЖНО СДЕЛАТЬ ПРИВАТНЫМ
+        static void createTable(const std::string& db_name, const std::string& table_name);
+        static void defineScheme(const std::string& db_name, const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns);
         std::optional<std::reference_wrapper<const Row>>  search_by_value(const std::string& column_name, const std::string& value);
 
         void insert(const std::vector<std::string>& row);
         void insert_into_file();
-        void update(int id, std::string column_name, const std::string&);//пока метод ожидает что я точно укажу индекс в массиве и ожидает строку-значение на вход там уже можно преобразовать в нужный тип.
+        void update(int id, std::string column_name, const std::string&);
         void update_id_value_file();
         void delete_row(const int& index);
         void delete_all();
 
-        void read();
-        void read_scheme();
-        void read_last_id_value();
         const std::vector<Row>& get_table_data() const;
         std::vector<std::pair<std::string, std::string>> get_scheme();
 };
@@ -68,11 +72,11 @@ Table::Table(std::string db_name, std::string table_name) : db_name(db_name), ta
 {
     try{
         this->read_scheme();
-        this->read();
+        this->read_data();
         this->read_last_id_value();
     }
-    catch(const std::runtime_error& e){
-        std::cerr << "Error reading table: " << e.what() << std::endl;
+    catch(const std::exception& e){
+        std::cerr << "Error reading table: " << e.what() << "\n";
     }
     //std::cout << "Last ID value is:" << last_id << "\n";
 }
@@ -89,25 +93,23 @@ Table::~Table()
         this->update_id_value_file();
         table_data.clear();
     }
-    catch(const std::runtime_error& e){
-        std::cerr << e.what();
+    catch(const std::exception& e){
+        std::cerr << e.what() << "\n";
     }
 }
 
 /// @brief создание файлов схемы и данных
-void Table::createTable()
+void Table::createTable(const std::string& db_name, const std::string& table_name)
 {
     if(std::filesystem::exists("./DB_test/" + db_name) && std::filesystem::is_directory("./DB_test/" + db_name)){
         std::ofstream scheme_file ("./DB_test/" + db_name + "/" + table_name + "_scheme.txt");
         std::ofstream data_file ("./DB_test/" + db_name + "/" + table_name + "_data.txt");
         std::ofstream last_id_file ("./DB_test/" + db_name + "/" + table_name + "_last_id_value.txt");
 
-        last_id = 1;
-        last_id_file << last_id;
-        last_id_file.close();
+        last_id_file << "1";
     }
     else{
-        //ДОПИСАТЬ ЭТОТ БЛОК
+        throw std::runtime_error("Can`t find the database directory. Check if the following dirrectory exists!");
     }
     
 }
@@ -115,20 +117,19 @@ void Table::createTable()
 /// @brief заполняет файл схемы таблицы в формате column_name:data_type
 /// поле id автоматически добавляеться
 /// @param columns - схема формата column_name | data_type
-void Table::defineScheme(std::vector<std::pair<std::string, std::string>> columns)// имя:тип
+void Table::defineScheme(const std::string& db_name, const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns)// имя:тип
 {
-    //проверка открылся ли файл
     std::ofstream scheme ("./DB_test/" + db_name + "/" + table_name + "_scheme.txt");
 
     scheme << "id" << ":" << "int" << "\n";
-    this->scheme = columns;
-    this->scheme.push_back({"id", "int"});
 
     for(int i=0; i< columns.size(); i++)
     {
         scheme << columns[i].first << ":" << columns[i].second << "\n";
+        if(!scheme){
+            throw std::runtime_error("Can`t write table scheme to file");
+        }
     }
-    scheme.close();
 }
 
 /**
@@ -186,6 +187,8 @@ void Table::update(int id, std::string column_name, const std::string& value)
             for(int i = 0; i< scheme.size(); i++){
                 if(scheme[i].first == column_name){
                     table_data[index->second].update_value(this->find_column_index(column_name), scheme[i].second, value);
+                    std::cout << "Data updated successfuly\n";
+                    break;
                 }
             }
         }
@@ -195,7 +198,7 @@ void Table::update(int id, std::string column_name, const std::string& value)
 
     }
     catch(const std::runtime_error& e){
-        std::cerr << "Can`t update value: " << e.what(); 
+        std::cerr << "Can`t update value: " << e.what() << "\n"; 
     }
 }
 
@@ -224,7 +227,8 @@ void Table::insert_into_file()//записывает данные в форма�
                 }}
 
                 data_file << row_str;
-                if (i < table_data.size() - 1) data_file << "\n"; // ЧТОБЫ НЕ БЫЛО ПУСТОЙ СТРОКИ В КОНЦЕ
+                // ЧТОБЫ НЕ БЫЛО ПУСТОЙ СТРОКИ В КОНЦЕ ВРЕМЕННОЕ РЕШЕНИЕ - ЗАМЕНА table_data НА ID.INDEX ТАК КАК В НЕМ АКТУАЛЬНОЕ КОЛ-ВО ДАННЫХ
+                if (i < id_index.size() - 1) data_file << "\n";
                 //вроде бы здесь ошибка, так как если удалять строку, особенно с конца, то добавление переноса строки будет
                 if(!data_file){
                     throw std::runtime_error("Can`t write to to data file");
@@ -244,55 +248,57 @@ void Table::update_id_value_file()
     }
 }
 
+std::ifstream Table::open_input_file(const std::string& path)
+{
+    std::ifstream file(path);
+    if(!file.is_open()){
+        throw std::runtime_error("Could not open file: " + path);
+    }
+
+    return file;
+}
+
 /**
  * @brief считавает из файла данных все в один вектор table_data, который состоит из строк а строки из отдельных значений
  * @note вызываеться в конструкторе при создании оьбъекта таблицы
- * @todo ПРИВЕСТИ К ЕДИНОМУ ВИДУ ВСЕ ПРОВЕРКИ И ЛОГИКУ ФАЙЛОВ read_
  */
-void Table::read()
+void Table::read_data()
 {
-    if(std::filesystem::exists("./DB_test/" + db_name + "/" + table_name + "_data.txt") && std::filesystem::exists("./DB_test/" + db_name + "/" + table_name + "_scheme.txt")){
-        //std::cout<<"1";
-        table_data.clear();
+    std::ifstream data_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "_data.txt");
 
-        std::ifstream data_file("./DB_test/" + db_name + "/" + table_name + "_data.txt");
-        std::string line;
+    table_data.clear();//это может быть лишним
 
-        while (std::getline(data_file, line)) {
-            std::stringstream ss(line);
-            std::string token;
-            Row row;
-            int column_index = 0;
+    std::string line;
 
-            while (std::getline(ss, token, ':')) {
-                if (column_index < scheme.size()) {
-                    std::string type = scheme[column_index].second;
-                    row.add_to_row(type, token);
-                }
-                column_index++;
+    while (std::getline(data_file, line)) {
+        std::stringstream ss(line);
+        std::string token;
+        Row row;
+        int column_index = 0;
+
+        while (std::getline(ss, token, ':')) {
+            if (column_index < scheme.size()) {
+                std::string type = scheme[column_index].second;
+                row.add_to_row(type, token);
             }
-            table_data.push_back(std::move(row)); // нужно обернуть в unique_ptr
-            //std::cout<<"1 \n";
-            const auto& id_value = table_data.back().getRowData();//ТУТ ТИПА Я ИНДЕКСИРУЮ. Я ПОЛУЧАЮ ЗНАЧЕНИЕ ID - ОНО БУДЕТ КЛЮЧЕМ, А ИНДЕКС В МАССИВЕ - ЗНАЧЕНИЕ ДЛЯ БЫСТРОГО ПОИСКА
-            id_index.insert({id_value[0]->toString(), table_data.size() - 1});
+            column_index++;
         }
-    }
-    else{
-       // std::cout<<"0";
+        table_data.push_back(std::move(row));
+        //std::cout<<"1 \n";
+        const auto& id_value = table_data.back().getRowData();//ТУТ ТИПА Я ИНДЕКСИРУЮ. Я ПОЛУЧАЮ ЗНАЧЕНИЕ ID - ОНО БУДЕТ КЛЮЧЕМ, А ИНДЕКС В МАССИВЕ - ЗНАЧЕНИЕ ДЛЯ БЫСТРОГО ПОИСКА
+        id_index.insert({id_value[0]->toString(), table_data.size() - 1});
     }
 }
 
 /**
  * @brief считавает схему таблицы из файла в scheme
  * @note вызываеться в конструкторе при создании оьбъекта таблицы
- * @todo ПРИВЕСТИ К ЕДИНОМУ ВИДУ ВСЕ ПРОВЕРКИ И ЛОГИКУ ФАЙЛОВ read_
  */
-void Table::read_scheme() {
-    scheme.clear();
-    std::ifstream scheme_file("./DB_test/" + db_name + "/" + table_name + "_scheme.txt");
-    if (!scheme_file.is_open())
-        throw std::runtime_error("Could not open scheme file");
+void Table::read_scheme()
+{
+    std::ifstream scheme_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "_scheme.txt");
 
+    scheme.clear();
     std::string line;
     while (std::getline(scheme_file, line)) {
         std::stringstream ss(line);
@@ -304,23 +310,23 @@ void Table::read_scheme() {
 }
 
 /**
- * @todo ПРИВЕСТИ К ЕДИНОМУ ВИДУ ВСЕ ПРОВЕРКИ И ЛОГИКУ ФАЙЛОВ read_
- * @todo ПРОВЕРКИ
+ * @brief считывает last_id value from file
  */
 void Table::read_last_id_value()
 {
-    std::ifstream id_value_file("./DB_test/" + db_name + "/" + table_name + "_last_id_value.txt");
+    std::ifstream id_value_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "_last_id_value.txt");
+    std::string line;
 
-    if(!id_value_file.is_open()){
-        throw std::runtime_error("Could not open id value file");
+    if (!std::getline(id_value_file, line) || line.empty()) {
+        throw std::runtime_error("ID value file is empty or invalid");
     }
 
-    std::string line;
-   // if (!std::getline(id_value_file, line) || line.empty()) {
-   //     throw std::runtime_error("ID value file is empty or invalid");
-   // }
-    std::getline(id_value_file, line);
-    last_id = std::stoi(line);
+    try{
+    last_id = std::stoi(line); 
+    }
+    catch(const std::exception& e){
+        throw std::runtime_error("Invalid ID value\n");
+    }
 }
 
 /**
@@ -349,7 +355,7 @@ std::optional<std::reference_wrapper<const Row>>  Table::search_by_value(const s
         }
     }
     catch(const std::runtime_error& e){
-        std::cerr << e.what();
+        std::cerr << e.what() << "\n";
         return std::nullopt;
     }
 
@@ -383,12 +389,12 @@ void Table::delete_row(const int& index)//ID ПОКА ЧТО ТУТ ПЕРЕДА
 {
     auto deleted_row_id_value = id_index.find(std::to_string(index));
     if(deleted_row_id_value != id_index.end()){
-        id_index.erase(std::to_string(index));
         this->table_data[deleted_row_id_value->second].setAsDeleted();
+        id_index.erase(std::to_string(index));
         this->is_edited = true;
     }
     else{
-        throw std::runtime_error("There is no rows with such id value");
+        std::cerr << "There is no rows with such id value";
     }
 }
 
@@ -400,6 +406,7 @@ void Table::delete_all()
 {
     this->is_edited = true;
     table_data.clear();
+    id_index.clear();
 }
 
 
