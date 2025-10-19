@@ -10,7 +10,7 @@ int main()
    // db.createDatabase();
 
     //db.createTable("users", { {"name", "string"}, {"age", "int"} });
-    db.use_table("users");
+    db.useTable("users");
     //db.table->read_scheme();
    // db.table->show_scheme();
 
@@ -23,7 +23,7 @@ int main()
     //db.table->read(); // ЧТОБЫ ПРОСТО ГЛЯНУТЬ, ЧТО В ФАЙЛК
 
     //std::vector<std::string> row4 = {"John", "20", "m", "1"};
-   // db.table->insert(row4);
+    //db.table->insert(row4);
   //  db.table->show_table_data();
     //db.table->update(3, "name", "Insomnia");
     //db.table->delete_row(5);

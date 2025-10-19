@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <unordered_map>
+#include <map>
 #include <optional>
 #include "Row.hpp"
 /**
@@ -31,7 +31,7 @@ class Table{
 
     private:
         std::vector<Row> table_data;
-        std::unordered_map<std::string, int> id_index;
+        std::map<std::string, int> id_index;
         std::vector<std::pair<std::string, std::string>> scheme;
         bool is_edited = false;
         unsigned int last_id;
@@ -208,33 +208,36 @@ void Table::update(int id, std::string column_name, const std::string& value)
  * @note ЗАПИСЫВАЕТ ПУСТУЮ СТРОКУ В КОНЕЦ ФАЙЛА - ЭТО ПРИВОДИТ К КРАШАМ ПРОГРАММЫ!!!!!!
  * @note ТУТ ВНИМАТЕЛЬНО. ВРОДЕ ПУСТУЮ СТРОКУ ДОПИСЫВАЕТ, ЕСЛИ УДАЛЯТЬ СТРОКИ!!!!!!
  */
-void Table::insert_into_file()//записывает данные в формате data1:data2:data3 \n
+void Table::insert_into_file()
 {
-    if(is_edited){
-        std::ofstream data_file("./DB_test/" + db_name + "/" + table_name + "_data.txt");
-        std::cout << "Writing " << table_data.size() << " rows to file" << std::endl;
+    if (!is_edited) return;
 
-        for(size_t i = 0; i< table_data.size(); i++){
-            const auto& row = table_data[i];
+    std::ofstream data_file("./DB_test/" + db_name + "/" + table_name + "_data.txt");
+    if (!data_file)
+        throw std::runtime_error("Can't open file");
 
-            if(!row.isDeleted()){
-                std::string row_str;
-                const auto& row_data = row.getRowData();
+    std::cout << "Writing " << id_index.size() << " rows to file" << std::endl;
 
-                for(size_t j = 0; j<row.getRowSize(); j++){{
-                    row_str += row_data[j]->toString();
-                    if (j < row.getRowSize() - 1) row_str += ":";
-                }}
+    for (auto it = id_index.begin(); it != id_index.end(); ++it) {
+        const auto& row = table_data[it->second];
+        const auto& row_data = row.getRowData();
 
-                data_file << row_str;
-                // ЧТОБЫ НЕ БЫЛО ПУСТОЙ СТРОКИ В КОНЦЕ ВРЕМЕННОЕ РЕШЕНИЕ - ЗАМЕНА table_data НА ID.INDEX ТАК КАК В НЕМ АКТУАЛЬНОЕ КОЛ-ВО ДАННЫХ
-                if (i < id_index.size() - 1) data_file << "\n";
-                //вроде бы здесь ошибка, так как если удалять строку, особенно с конца, то добавление переноса строки будет
-                if(!data_file){
-                    throw std::runtime_error("Can`t write to to data file");
-                }
-            }
+        std::string row_str;
+        for (size_t j = 0; j < row.getRowSize(); j++) {
+            row_str += row_data[j]->toString();
+            if (j < row.getRowSize() - 1) row_str += ":";
         }
+
+        data_file << row_str;
+
+        // Проверяем, что элемент не последний
+        auto next_it = std::next(it);
+        if (next_it != id_index.end()) {
+            data_file << "\n";
+        }
+
+        if (!data_file)
+            throw std::runtime_error("Can't write data into file");
     }
 }
 

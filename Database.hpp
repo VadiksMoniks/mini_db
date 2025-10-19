@@ -18,7 +18,7 @@ class Database{
  * создаються файлы
  * описываеться схема таблицы\
  * нужен контроль за тем, какие строки вводяться в виде типов и нужно изменить сигнатуру чтобы было ясно, какая пара нужна
- * 
+ * @todo dropDatabase
  */
 
     public:
@@ -31,8 +31,9 @@ class Database{
 
         void createDatabase();
         void createTable(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& scheme);
-        void use_table(const std::string& table_name);
+        void useTable(const std::string& table_name);
         void defineScheme(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns);
+        void dropDatabase();
     };
 
     /**
@@ -54,10 +55,8 @@ class Database{
      */
     inline void Database::createTable(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& scheme)
     {
-        //table = std::make_unique<Table>(db_name, table_name);
-        table->createTable(db_name, table_name);
-        table->defineScheme(db_name, table_name, scheme);
-        // удаление не нужно, умный указатель сам освободит память
+        Table::createTable(db_name, table_name);
+        Table::defineScheme(db_name, table_name, scheme);
     }
     
     /**
@@ -65,7 +64,7 @@ class Database{
      * @param table_name - имя новой таблицы
      * @note проверки, есть ли такая таблица итд.
      */
-    inline void Database::use_table(const std::string& table_name)
+    inline void Database::useTable(const std::string& table_name)
     {
         if (table && table->table_name == table_name)
             return; // уже используется нужная таблица
