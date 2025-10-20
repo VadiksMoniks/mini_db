@@ -102,9 +102,10 @@ Table::~Table()
 void Table::createTable(const std::string& db_name, const std::string& table_name)
 {
     if(std::filesystem::exists("./DB_test/" + db_name) && std::filesystem::is_directory("./DB_test/" + db_name)){
-        std::ofstream scheme_file ("./DB_test/" + db_name + "/" + table_name + "_scheme.txt");
-        std::ofstream data_file ("./DB_test/" + db_name + "/" + table_name + "_data.txt");
-        std::ofstream last_id_file ("./DB_test/" + db_name + "/" + table_name + "_last_id_value.txt");
+        std::filesystem::create_directory("./DB_test/" + db_name + "/" + table_name);
+        std::ofstream scheme_file ("./DB_test/" + db_name + "/" + table_name + "/" + table_name + "_scheme.txt");
+        std::ofstream data_file ("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_data.txt");
+        std::ofstream last_id_file ("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_last_id_value.txt");
 
         last_id_file << "1";
     }
@@ -119,7 +120,7 @@ void Table::createTable(const std::string& db_name, const std::string& table_nam
 /// @param columns - схема формата column_name | data_type
 void Table::defineScheme(const std::string& db_name, const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns)// имя:тип
 {
-    std::ofstream scheme ("./DB_test/" + db_name + "/" + table_name + "_scheme.txt");
+    std::ofstream scheme ("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_scheme.txt");
 
     scheme << "id" << ":" << "int" << "\n";
 
@@ -205,14 +206,12 @@ void Table::update(int id, std::string column_name, const std::string& value)
 /**
  * @brief вставка данных в файл в формате value1:value2:valu3...
  * @note вызываеться автоматически в деструкторе после завершения работы с таблицей
- * @note ЗАПИСЫВАЕТ ПУСТУЮ СТРОКУ В КОНЕЦ ФАЙЛА - ЭТО ПРИВОДИТ К КРАШАМ ПРОГРАММЫ!!!!!!
- * @note ТУТ ВНИМАТЕЛЬНО. ВРОДЕ ПУСТУЮ СТРОКУ ДОПИСЫВАЕТ, ЕСЛИ УДАЛЯТЬ СТРОКИ!!!!!!
  */
 void Table::insert_into_file()
 {
     if (!is_edited) return;
 
-    std::ofstream data_file("./DB_test/" + db_name + "/" + table_name + "_data.txt");
+    std::ofstream data_file("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_data.txt");
     if (!data_file)
         throw std::runtime_error("Can't open file");
 
@@ -243,7 +242,7 @@ void Table::insert_into_file()
 
 void Table::update_id_value_file()
 {
-    std::ofstream id_value_file("./DB_test/" + db_name + "/" + table_name + "_last_id_value.txt");
+    std::ofstream id_value_file("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_last_id_value.txt");
     id_value_file << last_id;
 
     if(!id_value_file){
@@ -267,7 +266,7 @@ std::ifstream Table::open_input_file(const std::string& path)
  */
 void Table::read_data()
 {
-    std::ifstream data_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "_data.txt");
+    std::ifstream data_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_data.txt");
 
     table_data.clear();//это может быть лишним
 
@@ -299,7 +298,7 @@ void Table::read_data()
  */
 void Table::read_scheme()
 {
-    std::ifstream scheme_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "_scheme.txt");
+    std::ifstream scheme_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_scheme.txt");
 
     scheme.clear();
     std::string line;
@@ -317,7 +316,7 @@ void Table::read_scheme()
  */
 void Table::read_last_id_value()
 {
-    std::ifstream id_value_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "_last_id_value.txt");
+    std::ifstream id_value_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_last_id_value.txt");
     std::string line;
 
     if (!std::getline(id_value_file, line) || line.empty()) {

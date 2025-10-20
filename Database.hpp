@@ -18,12 +18,16 @@ class Database{
  * создаються файлы
  * описываеться схема таблицы\
  * нужен контроль за тем, какие строки вводяться в виде типов и нужно изменить сигнатуру чтобы было ясно, какая пара нужна
+ * ИЗМЕНЕНИЕ СХЕМЫ
  * @todo dropDatabase
  */
 
     public:
         std::string db_name;
         std::unique_ptr<Table> table; // теперь умный указатель
+
+    private:
+        void cleanDir(const std::string& path);
 
     public:
         Database(const std::string& db_name) : db_name(db_name), table(nullptr) {}
@@ -70,6 +74,33 @@ class Database{
             return; // уже используется нужная таблица
 
         table = std::make_unique<Table>(db_name, table_name);
+    }
+
+    void Database::dropDatabase()
+    {
+        try{
+            //this->cleanDir("./DB_test/" + db_name); // ЕСЛИ ЗАХОЧУ ИСПОЛЬЗОВАТЬ СВОЙ КОД С РЕКУРСИЕЙ, ТО ПРОСТО РАССКОМЕНТИРОВАТЬ
+            //std::filesystem::remove("./DB_test/" + db_name); // ЕСЛИ ЗАХОЧУ ИСПОЛЬЗОВАТЬ СВОЙ КОД С РЕКУРСИЕЙ, ТО ПРОСТО РАССКОМЕНТИРОВАТЬ
+            std::filesystem::remove_all("./DB_test/" + db_name);
+        }
+        catch(std::exception& e){
+            std::cerr << e.what() << "\n";
+        }
+
+        std::cout << "Database was removed \n";
+    }
+
+    void Database::cleanDir(const std::string& path)
+    {
+        for(const auto& entry : std::filesystem::directory_iterator(path)){
+            if(std::filesystem::is_directory(entry)){
+                Database::cleanDir(path + "/" + entry.path().filename().string());
+            }
+            if(!std::filesystem::remove(entry)){
+                throw std::runtime_error("Can`t remove the following file: " + entry.path().string());
+            }
+        }
+
     }
 
     /**
