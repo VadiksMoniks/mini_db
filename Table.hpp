@@ -1,6 +1,7 @@
 #ifndef TABLE
 #define TABLE
 #include <filesystem>
+#include <regex>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -163,8 +164,15 @@ void Table::insert(const std::vector<std::string>& row)
 
     new_row.add_to_row("int", std::to_string(last_id));
 
-    for (size_t i = 0; i < row.size(); ++i)
-        new_row.add_to_row(scheme[i + 1].second, row[i]);
+    try{
+        for (size_t i = 0; i < row.size(); ++i){
+            new_row.add_to_row(scheme[i + 1].second, row[i]); //!!!!
+        } 
+    }
+    catch(const std::runtime_error& e){
+        std::cerr << "Can`t insert values. " << e.what() << "\n"; 
+        throw;
+    }
 
     table_data.push_back(std::move(new_row));
     id_index.insert({std::to_string(last_id), table_data.size() - 1});

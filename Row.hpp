@@ -8,6 +8,7 @@
 #include "Value.hpp"
 #include "ValueBase.hpp"
 #include <stdexcept>
+#include "Validator.hpp"
 
 /**
  * @brief класс строки данных
@@ -60,17 +61,17 @@ class Row//это класс отдельной строки записи, он 
         * @param data_type - тип переменной
         * @param value - значение переменной
         */           
-       void add_to_row(const std::string& data_type, const std::string& value) {
-          //  std::cout << "Adding value: '" << value << "' with type: '" << data_type << "'\n";
-            auto it = factories.find(data_type);
-            if (it != factories.end()){
-                row_data.push_back(it->second(value));
-            }
-            else {
-                std::cerr << "ERROR: Unknown data type: '" << data_type << "'\n";
-                throw std::runtime_error("Unsupported data type");
+        void add_to_row(const std::string& data_type, const std::string& value) {
+            if (!Validator::is_valid(value, data_type)) {
+                throw std::runtime_error("Passed value(" + value + ") doesn`t match a following datatype: " + data_type);
             }
 
+            auto it = factories.find(data_type);
+            if (it != factories.end()) {
+                row_data.push_back(it->second(value));
+            } else {
+                throw std::runtime_error("Unsupported data type: " + data_type);
+            }
         }
 
         /**

@@ -22,7 +22,7 @@ int main()
 
     //db.table->read(); // ЧТОБЫ ПРОСТО ГЛЯНУТЬ, ЧТО В ФАЙЛК
 
-    //std::vector<std::string> row4 = {"John", "20", "m", "1"};
+    //std::vector<std::string> row4 = {"John", "20", "man", "1"};
     //db.table->insert(row4);
   //  db.table->show_table_data();
     //db.table->update(3, "name", "Insomnia");
