@@ -1,57 +1,43 @@
 #include <iostream>
 #include <windows.h>
 #include "Database.hpp"
+#include "Command.hpp"
 #include <windows.h>
+#include <thread>  // Для использования sleep
+#include <chrono>  // Для единиц времени
 
 int main()
 {
-    try{ 
-    Database db("mydb");
-   // db.createDatabase();
+    Command c;
 
-    //db.createTable("users", { {"name", "string"}, {"age", "int"} });
-    db.useTable("users");
-    //db.table->read_scheme();
-   // db.table->show_scheme();
+    while (true) {
+        std::string input;
+        std::getline(std::cin, input);
 
-    //std::vector<std::string> row1 = {"Alice", "30"};
-    //db.table->insert(row1);
-                                                    //ЧТОБЫ ЗАПИСАТЬ ЧТО_ТО В ФАЙЛ
-    //std::vector<std::string> row2 = {"Bob", "25"};
-    //db.table->insert(row2);
+        if (input.empty()) continue;
 
-    //db.table->read(); // ЧТОБЫ ПРОСТО ГЛЯНУТЬ, ЧТО В ФАЙЛК
+        size_t space_pos = input.find(' ');
+        std::string command = (space_pos == std::string::npos)
+                                ? input
+                                : input.substr(0, space_pos);
+        std::string params;
 
-    //std::vector<std::string> row4 = {"John", "20", "man", "1"};
-    //db.table->insert(row4);
-  //  db.table->show_table_data();
-    //db.table->update(3, "name", "Insomnia");
-    //db.table->delete_row(5);
-    auto scheme = db.table->get_scheme();
-    auto& table_data = db.table->get_table_data();
+        if (space_pos != std::string::npos && space_pos + 1 < input.size())
+            params = input.substr(space_pos + 1);
 
-    for (auto& column_name : scheme) {
-            std::cout << column_name.first << " | ";
-    }
-
-    std::cout << std::endl;
-
-    for (auto& row : table_data) {
-        const auto& row_data = row.getRowData();
-        if(!row.isDeleted()){
-            for (auto& value : row_data) {
-                std::cout << value->toString() << " | ";
-            }
+        if (command == "pause") {
+            system("pause");
+            break;
         }
-        std::cout << std::endl;
+
+        std::cout << "Command: [" << command << "]\n";
+        std::cout << "Params: [" << params << "]\n";
+
+        c.run(command, params);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
-    std::cout<<"\n";
-    
-    } catch (const std::exception& e) {
-        std::cerr << "EXCEPTION: " << e.what() << std::endl;
-    }
-    system("pause");
     return 0;
 }
 /** g++ main.cpp DataBase.hpp Table.hpp Row.hpp Value.hpp ValueBase.hpp -o db_test.exe

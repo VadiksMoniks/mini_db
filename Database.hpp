@@ -34,9 +34,8 @@ class Database{
         ~Database() = default; // умный указатель сам удалит Table
 
         void createDatabase();
-        void createTable(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& scheme);
+        void createTable(const std::string& table_name, const std::vector<std::string>& scheme);
         void useTable(const std::string& table_name);
-        void defineScheme(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns);
         void dropDatabase();
     };
 
@@ -57,7 +56,7 @@ class Database{
      * @param table_name - имя таблицы
      * @param scheme - вектор пар, описывающих схему таблицы
      */
-    inline void Database::createTable(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& scheme)
+    inline void Database::createTable(const std::string& table_name, const std::vector<std::string>& scheme) //const std::vector<std::pair<std::string, std::string>>& scheme)
     {
         Table::createTable(db_name, table_name);
         Table::defineScheme(db_name, table_name, scheme);
@@ -90,6 +89,9 @@ class Database{
         std::cout << "Database was removed \n";
     }
 
+    /**
+     * @brief для очистки файлов и папок рекурсивно
+     */
     void Database::cleanDir(const std::string& path)
     {
         for(const auto& entry : std::filesystem::directory_iterator(path)){

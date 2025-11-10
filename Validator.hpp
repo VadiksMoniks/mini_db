@@ -5,6 +5,9 @@
 #include <stdexcept>
 #include <regex>
 
+/**
+ * @brief класс для валидации входных данных для заполнения строки
+ */
 class Validator
 {
     private:
@@ -47,6 +50,11 @@ class Validator
         Validator() = delete;
         ~Validator() = delete;
 
+        /**
+         * @brief возвращает булево значение, которое показывает, валидны ли введенные данные
+         * @param value само значение
+         * @param type тип, который должен быть
+         */
         static bool is_valid(const std::string& value, const std::string& type){
             auto it = datatypes.find(type);
             if(it != datatypes.end()){

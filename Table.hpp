@@ -10,12 +10,8 @@
 #include <optional>
 #include "Row.hpp"
 /**
- * @see update method update() DONE
- * @see delete methods delete_all() delete_row() DONE
- * @see search by different params search_by_value() DONE I GUES
  * @todo more data types
- * @note НЕТУ ПРОВЕРОК СООТВЕТСТВИЯ ДАННЫХ СХЕМЕ, КОЛИЧЕСТВО ДАННЫХ В СТРОКЕ И ЧТО ДЕЛАТЬ С ПРОПУЩЕНЫМИ ПОЛЯМИ В СТРОКЕ?
- * @see автоинкрементное уникальное id поле
+ * @note ЧТО ДЕЛАТЬ С ПРОПУЩЕНЫМИ ПОЛЯМИ В СТРОКЕ? nullable
  */
 
  /**
@@ -53,7 +49,7 @@ class Table{
         Table(std::string db_name, std::string table_name);
         ~Table();
         static void createTable(const std::string& db_name, const std::string& table_name);
-        static void defineScheme(const std::string& db_name, const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns);
+        static void defineScheme(const std::string& db_name, const std::string& table_name, const std::vector<std::string>& columns);//const std::vector<std::pair<std::string, std::string>>& columns);
         std::optional<std::reference_wrapper<const Row>>  search_by_value(const std::string& column_name, const std::string& value);
 
         void insert(const std::vector<std::string>& row);
@@ -102,24 +98,37 @@ Table::~Table()
 /// @brief создание файлов схемы и данных
 void Table::createTable(const std::string& db_name, const std::string& table_name)
 {
-    if(std::filesystem::exists("./DB_test/" + db_name) && std::filesystem::is_directory("./DB_test/" + db_name)){
-        std::filesystem::create_directory("./DB_test/" + db_name + "/" + table_name);
-        std::ofstream scheme_file ("./DB_test/" + db_name + "/" + table_name + "/" + table_name + "_scheme.txt");
-        std::ofstream data_file ("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_data.txt");
-        std::ofstream last_id_file ("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_last_id_value.txt");
+    std::string base_path = "./DB_test/" + db_name;
+    std::string table_path = base_path + "/" + table_name;
 
-        last_id_file << "1";
-    }
-    else{
+    if(!std::filesystem::exists("./DB_test/" + db_name) || !std::filesystem::is_directory("./DB_test/" + db_name)){
         throw std::runtime_error("Can`t find the database directory. Check if the following dirrectory exists!");
     }
+
+    if(std::filesystem::exists(table_path)){
+        throw std::runtime_error("Table already exists: " + table_path);
+    }
+
+    std::filesystem::create_directory(table_path);
+
+    auto create_file_if_not_exists = [](const std::string& path, const std::string& initial = ""){
+        if(!std::filesystem::exists(path)){
+            std::ofstream file (path);
+            if (!initial.empty()) file << initial;
+        }
+
+    };
+
+    create_file_if_not_exists(table_path + "/" + table_name + "_scheme.txt");
+    create_file_if_not_exists(table_path + "/" + table_name + "_data.txt");
+    create_file_if_not_exists(table_path + "/" + table_name + "_last_id_value.txt", "1");
     
 }
 
 /// @brief заполняет файл схемы таблицы в формате column_name:data_type
 /// поле id автоматически добавляеться
 /// @param columns - схема формата column_name | data_type
-void Table::defineScheme(const std::string& db_name, const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns)// имя:тип
+void Table::defineScheme(const std::string& db_name, const std::string& table_name, const std::vector<std::string>& columns)//const std::vector<std::pair<std::string, std::string>>& columns)// имя:тип
 {
     std::ofstream scheme ("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_scheme.txt");
 
@@ -127,7 +136,8 @@ void Table::defineScheme(const std::string& db_name, const std::string& table_na
 
     for(int i=0; i< columns.size(); i++)
     {
-        scheme << columns[i].first << ":" << columns[i].second << "\n";
+        scheme << columns[i] << "\n";
+        //scheme << columns[i].first << ":" << columns[i].second << "\n";
         if(!scheme){
             throw std::runtime_error("Can`t write table scheme to file");
         }
@@ -396,7 +406,7 @@ std::vector<std::pair<std::string, std::string>> Table::get_scheme()
  * @note каждая строка Row может быть помечена как is_deleted, и при записи в файл она будет проигнорирована
  */
 void Table::delete_row(const int& index)//ID ПОКА ЧТО ТУТ ПЕРЕДАЕТЬСЯ ТОЛЬКО ЗНАЧЕНИЕ ID ПОЛЯ
-{
+{//ПРОВЕРКИ ПЕРЕДАНОГО ТИПА
     auto deleted_row_id_value = id_index.find(std::to_string(index));
     if(deleted_row_id_value != id_index.end()){
         this->table_data[deleted_row_id_value->second].setAsDeleted();
