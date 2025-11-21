@@ -407,15 +407,21 @@ std::vector<std::pair<std::string, std::string>> Table::get_scheme()
  */
 void Table::delete_row(const int& index)//ID ПОКА ЧТО ТУТ ПЕРЕДАЕТЬСЯ ТОЛЬКО ЗНАЧЕНИЕ ID ПОЛЯ
 {//ПРОВЕРКИ ПЕРЕДАНОГО ТИПА
-    auto deleted_row_id_value = id_index.find(std::to_string(index));
-    if(deleted_row_id_value != id_index.end()){
-        this->table_data[deleted_row_id_value->second].setAsDeleted();
-        id_index.erase(std::to_string(index));
-        this->is_edited = true;
+    if(Validator::is_valid(std::to_string(index), "int")){
+        auto deleted_row_id_value = id_index.find(std::to_string(index));
+        if(deleted_row_id_value != id_index.end()){
+            this->table_data[deleted_row_id_value->second].setAsDeleted();
+            id_index.erase(std::to_string(index));
+            this->is_edited = true;
+        }
+        else{
+            std::cerr << "There is no rows with such id value";
+        }
     }
     else{
-        std::cerr << "There is no rows with such id value";
+        std::cerr << "An integer should be passed for id value";
     }
+
 }
 
 /**

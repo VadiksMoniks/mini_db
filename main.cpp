@@ -9,7 +9,8 @@
 int main()
 {
     Command c;
-
+    std::cout << "help - for commands list \n";
+    
     while (true) {
         std::string input;
         std::getline(std::cin, input);
@@ -40,7 +41,7 @@ int main()
 
     return 0;
 }
-/** g++ main.cpp DataBase.hpp Table.hpp Row.hpp Value.hpp ValueBase.hpp -o db_test.exe
+/** g++ main.cpp DataBase.hpp Table.hpp Row.hpp Value.hpp ValueBase.hpp Command.hpp -o db_test.exe
  * сделать два класса Database и Table
  * все методе будут в бд, но те, которые работают с таблицой - тк же и в таблице. бд просто будет передавать вызов
  * данные хранить в текстовых файлах

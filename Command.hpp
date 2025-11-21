@@ -15,7 +15,7 @@ class Command
         Database* db = nullptr;
         using FactoryFunc = std::function<void(const std::optional<std::string>&)>;
         std::unordered_map<std::string, FactoryFunc> commands;
-        std::unordered_map<std::string, std::string> commads_description;
+        std::map<std::string, std::string> commads_description;
 
         std::vector<std::string> split_args(std::string const& line, const std::string& delimeter)
         {
@@ -47,7 +47,13 @@ class Command
                 {
                     "create-database", [this](const std::optional<std::string>&arg){
                         //Database db(*arg);
-                        db->createDatabase();
+                        if(db != nullptr){
+                            db->createDatabase();
+                        }
+                        else{
+                            std::cerr << "Database has not been selected. Use db-name command\n";
+                        }
+                        
                     }
                 },
                 {
@@ -68,45 +74,87 @@ class Command
                 },
                 {
                     "insert", [this](const std::optional<std::string>& arg){// ""insert 1:2:name:c:3.14
-
-                        db->table->insert(this->split_args(*arg, "::"));
+                        if(db != nullptr && db->table != nullptr){
+                            db->table->insert(this->split_args(*arg, "::"));
+                        }
+                        else{
+                            std::cout << "Chose table you want insert into this values via use-table command \n";
+                        }
+                        
                     }
                 },
                 {
-                    "update", [this](const std::optional<std::string>& arg){//КИДАТЬ СЮДА строку и разбивать ее уже здесь для того, чтобы main был чище
-                        std::vector<std::string> params = this->split_args(*arg, "::");
-                        if(params.size() != 3){
-                            throw std::runtime_error("Wrong number of params passed");
+                    "update", [this](const std::optional<std::string>& arg){
+                        if(db != nullptr && db->table != nullptr){
+                            std::vector<std::string> params = this->split_args(*arg, "::");
+                            if(params.size() != 3){
+                                throw std::runtime_error("Wrong number of params passed");
+                            }
+
+                            db->table->update(std::stoi(params[0]), params[1], params[2]);
+                        }
+                        else{
+
                         }
 
-                        db->table->update(std::stoi(params[0]), params[1], params[2]);
                     }
                 },
                 {
                     "show-table-data", [this](const std::optional<std::string>& arg){
-                        const auto& scheme = db->table->get_scheme();
-                        const auto& table_data = db->table->get_table_data();
+                        if(db != nullptr && db->table != nullptr){
+                            const auto& scheme = db->table->get_scheme();
+                            const auto& table_data = db->table->get_table_data();
 
-                        for (auto& column_name : scheme) {
-                                std::cout << column_name.first << " | ";
-                        }
-                        
-                        std::cout << "\n";
-
-                        for (auto& row : table_data) {
-                            const auto& row_data = row.getRowData();
-                            if(!row.isDeleted()){
-                                for (auto& value : row_data) {
-                                    std::cout << value->toString() << " | ";
-                                }
+                            for (auto& column_name : scheme) {
+                                    std::cout << column_name.first << " | ";
                             }
-                            std::cout << std::endl;
+                            
+                            std::cout << "\n";
+
+                            for (auto& row : table_data) {
+                                const auto& row_data = row.getRowData();
+                                if(!row.isDeleted()){
+                                    for (auto& value : row_data) {
+                                        std::cout << value->toString() << " | ";
+                                    }
+                                }
+                                std::cout << std::endl;
+                            }
+                        }
+                        else{
+                            std::cerr << "Database or table has not been selected\n";
                         }
                     }
                 },
                 {
                     "delete-row", [this](const std::optional<std::string>& arg){//проверки
-                        db->table->delete_row(std::stoi(*arg));
+                        if(db != nullptr && db->table != nullptr){
+                            db->table->delete_row(std::stoi(*arg));
+                        }
+                        else{
+                            std::cerr << "Database or table has not been selected\n";
+                        }
+                        
+                    }
+                },
+                {
+                    "delete-all", [this](const std::optional<std::string>& arg){
+                        if(db != nullptr && db->table != nullptr){
+                            db->table->delete_all();//??????????????????????????????
+                        }
+                        else{
+                            std::cerr << "Select database and table\n";
+                        }
+                    }
+                },
+                {
+                    "drop-db", [this](const std::optional<std::string>& arg){
+                        if(db != nullptr){
+                            db->dropDatabase();
+                        }
+                        else{
+                            std::cerr << "Select database\n";
+                        }
                     }
                 },
                 {
@@ -151,7 +199,13 @@ class Command
                 },
                 {
                     "pause","Stops the programm"
-                }
+                },
+                {
+                    "delete-all","Delete all rows from table"
+                },
+                {
+                    "drop-db", "Delete selected database and all tables from it"
+                },
             };
         }
 
