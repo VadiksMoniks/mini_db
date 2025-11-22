@@ -127,7 +127,7 @@ Command::Command(){
             "help", [this](const std::optional<std::string>& arg){
                 std::cout<<"Commands List: \n";
                 std::cout<< "\n";
-                
+
                 for(auto it = commads_description.begin(); it != commads_description.end(); ++it){
                     std::cout<< it->first << " " << it->second << "\n";
                     std::cout<< "\n";
@@ -157,7 +157,7 @@ Command::Command(){
             "update", "Updates passed parameter of the row. Requires row id, column name and value for this column"
         },
         {
-            "show-table-data", "Print table sceheme and all table data"
+            "show-table-data", "Print table scheme and all table data"
         },
         {
             "delete-row", "deletes row by it's id"
