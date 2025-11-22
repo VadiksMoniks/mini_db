@@ -1,6 +1,7 @@
 build/
 .vscode/
-DB_test/
+DB_test/*
+!DB_test/.gitkeep
 
 *.exe
 *.dll
