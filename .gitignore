@@ -1,6 +1,6 @@
 build/
 .vscode/
-test/
+DB_test/
 
 *.exe
 *.dll

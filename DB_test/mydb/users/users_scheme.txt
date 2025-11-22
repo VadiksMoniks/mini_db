@@ -1,5 +1,0 @@
-id:int
-name:string
-age:int
-gender:char
-happy:bool
