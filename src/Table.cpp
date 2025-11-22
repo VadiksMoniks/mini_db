@@ -1,69 +1,8 @@
-#ifndef TABLE
-#define TABLE
 #include <filesystem>
-#include <regex>
-#include <string>
-#include <iostream>
 #include <fstream>
-#include <vector>
-#include <map>
-#include <optional>
-#include "Row.hpp"
-/**
- * @todo more data types
- * @note ЧТО ДЕЛАТЬ С ПРОПУЩЕНЫМИ ПОЛЯМИ В СТРОКЕ? nullable
- */
-
- /**
-/// @brief класс таблицы данных
-  * вектор trable_data - набор отдельных записей - строк формата Row
-  * мапа id_index для быстрого поиска по индексу записи, это нужно так, как бедет использоваться автоинкремент уникальные id, то есть может быть ситуация, что идут id: 1,2,5
-  * scheme - схема таблицы. нужна для заполнения таблицы и для того, чтобы правильно вставлять значения - вектор пар имя колонки | тип данных
-  * is_edited - для того, чтобы после конца работы с таблицей, если она менялась - обновить файл с данными
-  * db_name - имя базы данных - папка с файлами
-  * table_name - имя файа, откуда считываються, и куда пишуться данные
-  * НУЖНО ЧТО-ТО РЕШАТЬ С РАБОТОЙ ПРОГРАММЫ, ТАК КАК ЛОГИКА РАБОТЫ КЛАССА БД ПРОТИВОРЕЧИТ ЛОГИКЕ РАБОТЫ ЭТОГО КЛАССА
-  */
-class Table{
-
-    private:
-        std::vector<Row> table_data;
-        std::map<std::string, int> id_index;
-        std::vector<std::pair<std::string, std::string>> scheme;
-        bool is_edited = false;
-        unsigned int last_id;
-
-    public:
-        std::string db_name;
-        std::string table_name;
-
-    private:
-        std::ifstream open_input_file(const std::string& path);
-        int find_column_index(const std::string& column_name);
-
-        void read_data();
-        void read_scheme();
-        void read_last_id_value();
-
-    public:
-        Table(std::string db_name, std::string table_name);
-        ~Table();
-        static void createTable(const std::string& db_name, const std::string& table_name);
-        static void defineScheme(const std::string& db_name, const std::string& table_name, const std::vector<std::string>& columns);//const std::vector<std::pair<std::string, std::string>>& columns);
-        std::optional<std::reference_wrapper<const Row>>  search_by_value(const std::string& column_name, const std::string& value);
-
-        void insert(const std::vector<std::string>& row);
-        void insert_into_file();
-        void update(int id, std::string column_name, const std::string&);
-        void update_id_value_file();
-        void delete_row(const int& index);
-        void delete_all();
-
-        const std::vector<Row>& get_table_data() const;
-        std::vector<std::pair<std::string, std::string>> get_scheme();
-};
-
-
+#include <iostream>
+#include "DB/Table.hpp"
+#include "DB/Row.hpp"
 /// @brief при создании объекта таблицы, считать данные из файла, если есть, и считать схему таблицы
 Table::Table(std::string db_name, std::string table_name) : db_name(db_name), table_name(table_name)
 {
@@ -75,7 +14,6 @@ Table::Table(std::string db_name, std::string table_name) : db_name(db_name), ta
     catch(const std::exception& e){
         std::cerr << "Error reading table: " << e.what() << "\n";
     }
-    //std::cout << "Last ID value is:" << last_id << "\n";
 }
 
 /*
@@ -84,7 +22,6 @@ Table::Table(std::string db_name, std::string table_name) : db_name(db_name), ta
  */
 Table::~Table()
 {
-   // std::cout << "Table destructor called\n";
     try{
         this->insert_into_file();
         this->update_id_value_file();
@@ -98,10 +35,10 @@ Table::~Table()
 /// @brief создание файлов схемы и данных
 void Table::createTable(const std::string& db_name, const std::string& table_name)
 {
-    std::string base_path = "./DB_test/" + db_name;
+    std::string base_path = "../DB_test/" + db_name;
     std::string table_path = base_path + "/" + table_name;
 
-    if(!std::filesystem::exists("./DB_test/" + db_name) || !std::filesystem::is_directory("./DB_test/" + db_name)){
+    if(!std::filesystem::exists("../DB_test/" + db_name) || !std::filesystem::is_directory("../DB_test/" + db_name)){
         throw std::runtime_error("Can`t find the database directory. Check if the following dirrectory exists!");
     }
 
@@ -134,7 +71,7 @@ void Table::defineScheme(const std::string& db_name, const std::string& table_na
 
     scheme << "id" << ":" << "int" << "\n";
 
-    for(int i=0; i< columns.size(); i++)
+    for(size_t i=0; i< columns.size(); i++)
     {
         scheme << columns[i] << "\n";
         //scheme << columns[i].first << ":" << columns[i].second << "\n";
@@ -151,7 +88,7 @@ void Table::defineScheme(const std::string& db_name, const std::string& table_na
  */
 int Table::find_column_index(const std::string& column_name)
 {
-    for(int i = 0; i< scheme.size(); i++){
+    for(size_t i = 0; i< scheme.size(); i++){
         if(scheme[i].first == column_name){
             return static_cast<int>(i);
         }
@@ -203,7 +140,7 @@ void Table::update(int id, std::string column_name, const std::string& value)
         auto index = id_index.find(std::to_string(id));
 
         if(index != id_index.end()){
-            for(int i = 0; i< scheme.size(); i++){
+            for(size_t i = 0; i< scheme.size(); i++){
                 if(scheme[i].first == column_name){
                     table_data[index->second].update_value(this->find_column_index(column_name), scheme[i].second, value);
                     std::cout << "Data updated successfuly\n";
@@ -434,7 +371,3 @@ void Table::delete_all()
     table_data.clear();
     id_index.clear();
 }
-
-
-
-#endif

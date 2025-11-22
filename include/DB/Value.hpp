@@ -1,6 +1,5 @@
 #ifndef VALUE
 #define VALUE
-#include <string>
 #include <type_traits>
 #include "ValueBase.hpp"
 

@@ -2,9 +2,8 @@
 #include <windows.h>
 #include "Database.hpp"
 #include "Command.hpp"
-#include <windows.h>
-#include <thread>  // Для использования sleep
-#include <chrono>  // Для единиц времени
+#include <thread>
+#include <chrono>
 
 int main()
 {
@@ -31,8 +30,8 @@ int main()
             break;
         }
 
-        std::cout << "Command: [" << command << "]\n";
-        std::cout << "Params: [" << params << "]\n";
+        //std::cout << "Command: [" << command << "]\n";
+        //std::cout << "Params: [" << params << "]\n";
 
         c.run(command, params);
 
