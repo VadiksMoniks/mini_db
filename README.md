@@ -2,7 +2,7 @@
 
 ## What is this project
 
-It's just a kind of pet-project which I made just to study c++. It represents a similar database which can store some primitive data in .txt files
+It's just a kind of pet-project which I made just to study c++. It represents a simple database which can store some primitive data in .txt files
 
 ## Installation
 
