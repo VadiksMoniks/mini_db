@@ -1,7 +1,6 @@
 #include <iostream>
 #include <windows.h>
-#include "Database.hpp"
-#include "Command.hpp"
+#include "DB/Command.hpp"
 #include <thread>
 #include <chrono>
 
@@ -40,7 +39,7 @@ int main()
 
     return 0;
 }
-/** g++ main.cpp DataBase.hpp Table.hpp Row.hpp Value.hpp ValueBase.hpp Command.hpp -o db_test.exe
+/** g++ src/*.cpp -Iinclude -o build/db_test.exe
  * сделать два класса Database и Table
  * все методе будут в бд, но те, которые работают с таблицой - тк же и в таблице. бд просто будет передавать вызов
  * данные хранить в текстовых файлах

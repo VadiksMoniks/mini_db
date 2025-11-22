@@ -126,9 +126,11 @@ Command::Command(){
         {
             "help", [this](const std::optional<std::string>& arg){
                 std::cout<<"Commands List: \n";
-
+                std::cout<< "\n";
+                
                 for(auto it = commads_description.begin(); it != commads_description.end(); ++it){
                     std::cout<< it->first << " " << it->second << "\n";
+                    std::cout<< "\n";
                 }
             }
         }

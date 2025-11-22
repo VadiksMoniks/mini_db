@@ -39,7 +39,7 @@ class Row//это класс отдельной строки записи, он 
         void update_value(int index, std::string data_type, const::std::string& value); 
         size_t getRowSize() const;
         const std::vector<std::unique_ptr<ValueBase>>& getRowData() const;
-        bool Row::isDeleted() const;
-        void Row::setAsDeleted();
+        bool isDeleted() const;
+        void setAsDeleted();
 };
 #endif

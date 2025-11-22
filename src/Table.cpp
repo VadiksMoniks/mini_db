@@ -67,7 +67,7 @@ void Table::createTable(const std::string& db_name, const std::string& table_nam
 /// @param columns - схема формата column_name | data_type
 void Table::defineScheme(const std::string& db_name, const std::string& table_name, const std::vector<std::string>& columns)//const std::vector<std::pair<std::string, std::string>>& columns)// имя:тип
 {
-    std::ofstream scheme ("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_scheme.txt");
+    std::ofstream scheme ("../DB_test/" + db_name + "/" + table_name + "/" + table_name +"_scheme.txt");
 
     scheme << "id" << ":" << "int" << "\n";
 
@@ -166,11 +166,11 @@ void Table::insert_into_file()
 {
     if (!is_edited) return;
 
-    std::ofstream data_file("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_data.txt");
+    std::ofstream data_file("../DB_test/" + db_name + "/" + table_name + "/" + table_name +"_data.txt");
     if (!data_file)
         throw std::runtime_error("Can't open file");
 
-    std::cout << "Writing " << id_index.size() << " rows to file" << std::endl;
+    //std::cout << "Writing " << id_index.size() << " rows to file" << std::endl;
 
     for (auto it = id_index.begin(); it != id_index.end(); ++it) {
         const auto& row = table_data[it->second];
@@ -197,7 +197,7 @@ void Table::insert_into_file()
 
 void Table::update_id_value_file()
 {
-    std::ofstream id_value_file("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_last_id_value.txt");
+    std::ofstream id_value_file("../DB_test/" + db_name + "/" + table_name + "/" + table_name +"_last_id_value.txt");
     id_value_file << last_id;
 
     if(!id_value_file){
@@ -221,7 +221,7 @@ std::ifstream Table::open_input_file(const std::string& path)
  */
 void Table::read_data()
 {
-    std::ifstream data_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_data.txt");
+    std::ifstream data_file = this->open_input_file("../DB_test/" + db_name + "/" + table_name + "/" + table_name +"_data.txt");
 
     table_data.clear();//это может быть лишним
 
@@ -253,7 +253,7 @@ void Table::read_data()
  */
 void Table::read_scheme()
 {
-    std::ifstream scheme_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_scheme.txt");
+    std::ifstream scheme_file = this->open_input_file("../DB_test/" + db_name + "/" + table_name + "/" + table_name +"_scheme.txt");
 
     scheme.clear();
     std::string line;
@@ -271,7 +271,7 @@ void Table::read_scheme()
  */
 void Table::read_last_id_value()
 {
-    std::ifstream id_value_file = this->open_input_file("./DB_test/" + db_name + "/" + table_name + "/" + table_name +"_last_id_value.txt");
+    std::ifstream id_value_file = this->open_input_file("../DB_test/" + db_name + "/" + table_name + "/" + table_name +"_last_id_value.txt");
     std::string line;
 
     if (!std::getline(id_value_file, line) || line.empty()) {

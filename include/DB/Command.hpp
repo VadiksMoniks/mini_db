@@ -1,9 +1,8 @@
 #ifndef COMMAND
 #define COMMAND
 #include <functional>
-//#include <any>
-#include "Database.hpp"
-#include "Table.hpp"
+#include "DB/Database.hpp"
+#include "DB/Table.hpp"
 /**
  * @brief класс консольной комманды для работы программы
  */
