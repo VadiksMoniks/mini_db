@@ -22,26 +22,38 @@ You can find your executable file in build directory and run it, after that you'
 ## Commands list
 
 ```db-name``` - Requires database name which will be used to store data
-```db-name mydb```
+```basah
+db-name mydb
+```
 
 ```create-database``` - Creates database folder inside DB_test directory
 
 ```create-table``` - Creates table with table scheme. Required parameters should be passed like this: create-table table_name;;name:string::age:int Dont pass id column it is adding automaticaly NOTE(althou you create table you still dont using. It could be usefull to create multiple tables before start using them)
-```create-table users;;name:string::age:int::gender:char```
+```bash 
+create-table users;;name:string::age:int::gender:char
+```
 
 ```use-table``` - Switch between tables to use them
-```use-table users```
+```bash
+use-table users
+```
 
 ```insert``` - Inserting data in form like this: name::10::m::true
-```insert Alice::26::f```
+```bash
+insert Alice::26::f
+```
 
 ```update``` - Updates passed parameter of the row. Requires row id, column name and value for this column
-```update 1::age::25```
+```bash
+update 1::age::25
+```
 
 ```show-table-data``` - Print table scheme and all table data
 
 ```delete-row``` - deletes row by it's id
-```delete-row 1```
+```bash
+delete-row 1
+```
 
 ```help``` - Shows all commands list
 
