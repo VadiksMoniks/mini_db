@@ -21,8 +21,14 @@ void Database::createDatabase()
  */
 void Database::createTable(const std::string& table_name, const std::vector<std::string>& scheme) //const std::vector<std::pair<std::string, std::string>>& scheme)
 {
-    Table::createTable(db_name, table_name);
-    Table::defineScheme(db_name, table_name, scheme);
+    if(std::filesystem::exists("../DB_test/" + db_name + "/" + table_name)){
+        std::cout<<"This table is already exists\n";
+    }
+    else{
+        Table::createTable(db_name, table_name);
+        Table::defineScheme(db_name, table_name, scheme); 
+    }
+
 }
 
 /**
@@ -43,13 +49,31 @@ void Database::dropDatabase()
     try{
         //this->cleanDir("../DB_test/" + db_name); // ЕСЛИ ЗАХОЧУ ИСПОЛЬЗОВАТЬ СВОЙ КОД С РЕКУРСИЕЙ, ТО ПРОСТО РАССКОМЕНТИРОВАТЬ
         //std::filesystem::remove("../DB_test/" + db_name); // ЕСЛИ ЗАХОЧУ ИСПОЛЬЗОВАТЬ СВОЙ КОД С РЕКУРСИЕЙ, ТО ПРОСТО РАССКОМЕНТИРОВАТЬ
+        if(table != nullptr){
+            table = nullptr;
+        }
+
         std::filesystem::remove_all("../DB_test/" + db_name);
+        std::cout << "Database was removed \n";
     }
     catch(std::exception& e){
         std::cerr << e.what() << "\n";
     }
+    
+}
 
-    std::cout << "Database was removed \n";
+void Database::dropTable(const std::string& table_name)
+{
+    try{
+        if(table != nullptr && table->table_name == table_name){
+            table = nullptr;
+        }
+        std::filesystem::remove_all("../DB_test/" + db_name + "/" + table_name);
+
+    }
+    catch(std::exception& e){
+        std::cerr << e.what() << "\n";
+    }
 }
 
 /**

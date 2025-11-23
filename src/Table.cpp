@@ -59,7 +59,6 @@ void Table::createTable(const std::string& db_name, const std::string& table_nam
     create_file_if_not_exists(table_path + "/" + table_name + "_scheme.txt");
     create_file_if_not_exists(table_path + "/" + table_name + "_data.txt");
     create_file_if_not_exists(table_path + "/" + table_name + "_last_id_value.txt", "1");
-    
 }
 
 /// @brief заполняет файл схемы таблицы в формате column_name:data_type

@@ -30,6 +30,7 @@ class Database{
         void createTable(const std::string& table_name, const std::vector<std::string>& scheme);
         void useTable(const std::string& table_name);
         void dropDatabase();
+        void dropTable(const std::string& table_name);
     };
 
 #endif

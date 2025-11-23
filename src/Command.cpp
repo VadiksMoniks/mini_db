@@ -5,7 +5,12 @@ Command::Command(){
     commands = {
         {
             "db-name", [this](const std::optional<std::string>& arg){
-                if(db != nullptr) delete db;
+                if(db != nullptr){
+                    if(db->table != nullptr){
+                        db->table = nullptr;
+                    }
+                    delete db;
+                }
                 
                 db = new Database(*arg);
             }
@@ -124,6 +129,16 @@ Command::Command(){
             }
         },
         {
+            "drop-table", [this](const std::optional<std::string>& arg){
+                if(db != nullptr){
+                    db->dropTable(*arg);
+                }
+                else{
+                    std::cerr << "Select database\n";
+                }
+            }
+        },
+        {
             "help", [this](const std::optional<std::string>& arg){
                 std::cout<<"Commands List: \n";
                 std::cout<< "\n";
@@ -173,6 +188,9 @@ Command::Command(){
         },
         {
             "drop-db", "Delete selected database and all tables from it"
+        },
+        {
+            "drop-table", "Delete selected table"
         },
     };
 }
