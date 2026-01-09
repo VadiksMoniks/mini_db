@@ -13,7 +13,7 @@ This project doesn't have a cmake file yet so the only way to run it on your dev
 g++ src/*.cpp -Iinclude -o build/db_test.exe
 ```
 
-You can find this command at ```bash src/main.cpp``` at the end of the file if needed
+You can find this command at ```src/main.cpp``` at the end of the file if needed
 
 ## Usage
 
